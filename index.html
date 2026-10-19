@@ -71,7 +71,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v1.4';
+const VER='v1.5';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -532,7 +532,7 @@ function doGesture(a){
   const prev=CMDH[CMDH.length-1];
   if(!a.requeue){CMDH.push({k:tk,t:now,ts:a.gt==='h'?(a.t0||now):now});if(CMDH.length>6)CMDH.shift();chkTry()}   // 先行入力から出す時は、手を数え直さない
   // 投げ（control-brief v8.3・B-002）：密着でスティック前を入れたまま【強】タップ
-  if(tk==='Ht'&&P.y===0&&sFwd(stickVec().s)&&E.x-P.x<=CFG.throwD&&E.y===0&&!E.ko&&!['juggle','down','tech'].includes(E.st)&&(groundFree()||P.st==='crouch')){exec(P.ch==='RIN'?'r_throw':'throw',a,true);return}
+  if(tk==='Ht'&&P.y===0&&sFwd(stickVec().s)&&E.x-P.x<=CFG.throwD&&E.y===0&&!E.ko&&!['juggle','down','tech'].includes(E.st)&&(groundFree()||P.st==='crouch'||P.st==='dash'||frameNo-(P.dashEnd||-99)<=8)){if(P.st==='dash')P.st='idle';exec(P.ch==='RIN'?'r_throw':'throw',a,true);return}   // B-005：ダッシュ中・ダッシュの直後 8F でも投げ
   // コマンド（長いものから）。入れられないときは先行入力として待つ
   const c=a.requeue?null:matchCmd(now);if(c){doCommand(c.k,a);return}
   if(CFG.easy&&a.btn==='L'&&a.gt==='t'&&easyTap(a))return;
@@ -891,7 +891,7 @@ function updateP(){
       hist(P.jdir>0?'前ジャンプ':P.jdir<0?'後ろジャンプ':'ジャンプ',true);if(P.queuedS){const q=P.queuedS;P.queuedS=null;doSFlick(q)}}
     break}
   case 'dash':case 'back':
-    P.t++;const k=1-Math.pow(P.t/P.dur,2)*0.6;P.x+=P.vx*k*1.25;if(P.t>=P.dur){P.st='idle'}break;
+    P.t++;const k=1-Math.pow(P.t/P.dur,2)*0.6;P.x+=P.vx*k*1.25;if(P.t>=P.dur){if(P.st==='dash')P.dashEnd=frameNo;P.st='idle'}break;
   case 'adash':P.t++;P.x+=P.vx;if(P.t>=W.adashF){P.st='jump';P.vx=P.dir*0.9}break;
   case 'jump':P.jt=(P.jt||0)+1;if(airPhys())land(W.jland);break;
   case 'chase':{ // 打ち上げた相手のところへ自動で跳ぶ
