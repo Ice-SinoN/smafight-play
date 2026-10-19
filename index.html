@@ -55,7 +55,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v0.10';
+const VER='v0.11';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -78,15 +78,15 @@ const STATEPOSE={walkF:['walk_f','idle'],walkB:['walk_b','idle'],crouch:['crouch
 // ================= 設定（moveset v2 1章＋虎雪 16:00「フリックとホールドからのスワイプに分ける」） =================
 const DEF={ui:'game',fx:true,hbox:false,hand:'R',easy:false,nexth:true,punch:true,capOn:true,dsz:'std',
   dz:12,follow:60,sflickD:35,sflickT:150,
-  tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,hsHold:180,hsD:24,chf:700,cmdGap:350,cmdBuf:24,
+  tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,hsHold:180,hsD:24,lhHold:1000,chf:700,cmdGap:350,cmdBuf:24,
   cancelF:12,justF:4,parryF:8,buf:8,scale10:60,scaleMin:30,jcap:25,
   bsize:100,bx:0,by:0,stopx:100,
   dummy:'stand',nodmg:true,eburst:false,spinf:false,start:'mid',vib:true,snd:true};
 const CFG=Object.assign({},DEF);
 const load=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-{const s=load('smf_cfg10');if(s)for(const k in DEF)if(k in s)CFG[k]=s[k]}
-const saveCfg=()=>save('smf_cfg10',CFG);
+{const s=load('smf_cfg11');if(s)for(const k in DEF)if(k in s)CFG[k]=s[k]}
+const saveCfg=()=>save('smf_cfg11',CFG);
 
 // ================= 画面（論理の幅360） =================
 const LH=360,PAD=12;let LW=780,S=1,DPR=1,FB=360,ZY=84,FLOORL=310;   // 横持ち（A-017）：論理の高さ360、幅は機種しだい
@@ -186,7 +186,6 @@ const CMDS=[
   {k:'sp_sekka',seq:['Lt','LfF','LfB'],l:'弱タップ→弱前F→弱後F'},
   {k:'sp_yukiwari',seq:['Lt','HfD'],air:1,l:'空中で 弱タップ→強下F'},
   {k:'sp_hyosho',seq:['LfD','HfD'],l:'弱下F→強下F'},
-  {k:'sp_neko',seq:['LfB','HhB'],l:'弱後F→強ホールド後ろ'},
 ];
 const GLBL={t:'タップ',f:'フリック',h:'ホールド→スワイプ'};
 
@@ -293,7 +292,8 @@ function btnMove(g,p,t){
   g.dir=dd>=CFG.flickD*0.5?dirOf(dx,dy).d:null;
   if(g.armed&&!g.spent&&dd>=CFG.hsD){const r=dirOf(dx,dy);g.spent=true;
     if(r.off>CFG.dtol){failAt(g,'向きがずれた',BNM[g.b.k]+'ホールド');return}
-    inQ.push(gesture(g,'h',r.d,BNM[g.b.k]+'ホールド'+DIRK[r.d]))}
+    const lng=g.b===BH&&t-g.t0>=CFG.lhHold;   // 強を1秒以上ホールド＝ロングホールド（白猫の構え）
+    inQ.push(gesture(g,lng?'l':'h',r.d,BNM[g.b.k]+(lng?'ロングホールド':'ホールド')+DIRK[r.d]))}
 }
 function dirOf(dx,dy){const a=Math.atan2(-dy,dx)*180/Math.PI;const c=[['F',0],['U',90],['B',180],['B',-180],['D',-90]];
   let best=null,bd=1e9;for(const [d,v] of c){const df=Math.abs(a-v);if(df<bd){bd=df;best=d}}return {d:best,off:bd,a}}
@@ -370,7 +370,7 @@ function inCancel(m){const cw=m.cw||CFG.cancelF;return P.hit&&P.sinceHit<=cw}
 function isJust(m){const cw=m.cw||CFG.cancelF;return P.sinceHit>cw-CFG.justF}
 function remain(){return P.st==='atk'?tot(P.mv)-P.t:(P.st==='land'||P.st==='jsq')?P.t:(P.st==='dash'||P.st==='back')?(P.dur-P.t):(P.st==='stun'||P.st==='block')?P.stun:99}
 function queue(a,n){const r=remain();if(r<=(n||CFG.buf)){P.queued=a;P.qT=r+3;return true}return false}
-function tokenOf(a){return a.btn+(a.gt==='t'?'t':a.gt+a.dir)}
+function tokenOf(a){return a.btn+(a.gt==='t'?'t':(a.gt==='l'?'h':a.gt)+a.dir)}
 function doGesture(a){
   const tk=tokenOf(a),now=performance.now();
   const prev=CMDH[CMDH.length-1];
@@ -385,6 +385,7 @@ function doGesture(a){
   if(a.gt==='t'&&P.st==='atk'&&P.mv.launch&&P.hit&&E.st==='juggle'){startChase(a);return}
   if(P.st==='chase'&&a.gt==='t'){P.queued=a;P.qT=24;return}
   if(P.st==='stun'||P.st==='block'){ngMove(a,'やられ中');return}
+  if(a.gt==='l'){if(a.dir==='B'&&stanceNow()==='stand'){exec('sp_neko',a,true);return}a=Object.assign({},a,{gt:'h'})}
   const st=stanceNow(),gk=a.gt==='t'?'t':a.gt+a.dir;
   let k=(GRID[st][a.btn]||{})[gk];
   if(!k){ngMove(a,'この技はなし');return}
@@ -901,11 +902,13 @@ function drawButtons(){
     const live=g.dir;
     [['F',1,0],['U',0,-1],['D',0,1],['B',-1,0]].forEach(([d,ux,uy])=>{
       const L=live===d&&!g.spent,ax=b.x+ux*R,ay=Math.min(LH-10,b.y+uy*R);
-      if(g.armed&&!g.spent){ctx.strokeStyle=col;ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+6,0,7);ctx.stroke();ctx.lineWidth=1;
-        const k=grid['h'+d],tx=DIRK[d]+(k?' '+MV[k].nm:''),fn='800 '+(L?13:11)+'px '+UI;ctx.font=fn;const hw=ctx.measureText(tx).width/2;otxt(tx,Math.max(hw+6,Math.min(LW-hw-6,b.x+ux*(R+26))),Math.min(LH-10,b.y+uy*(R+6)),fn,L?col:'rgba(230,239,232,.75)')}
+      const lng=b===BH&&g.armed&&now-g.t0>=CFG.lhHold&&st==='stand';
+      if(g.armed&&!g.spent){ctx.strokeStyle=lng?C.gold:col;ctx.lineWidth=lng?6:4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+6,0,7);ctx.stroke();ctx.lineWidth=1;
+        const k=lng&&d==='B'?'sp_neko':grid['h'+d],tx=DIRK[d]+(k?' '+MV[k].nm:''),fn='800 '+(L?13:11)+'px '+UI;ctx.font=fn;const hw=ctx.measureText(tx).width/2;otxt(tx,Math.max(hw+6,Math.min(LW-hw-6,b.x+ux*(R+26))),Math.min(LH-10,b.y+uy*(R+6)),fn,L?col:'rgba(230,239,232,.75)')}
       else otxt(DIRK[d],ax,ay,'900 '+(L?22:14)+'px '+UI,L?col:'rgba(230,239,232,.3)','center','middle',3);
     });
-    if(g.armed&&!g.spent)otxt('ホールド：スワイプで技',b.x,b.y-b.r-44,'800 12px '+UI,col);
+    if(g.armed&&!g.spent){const lng=b===BH&&now-g.t0>=CFG.lhHold&&st==='stand';otxt(lng?'ロングホールド：← で白猫の構え':'ホールド：スワイプで技',b.x,b.y-b.r-44,'800 12px '+UI,lng?C.gold:col);
+      if(b===BH&&!lng&&st==='stand'&&g.maxd<CFG.tapd){const h=Math.min(1,(now-g.t0-CFG.hsHold)/Math.max(1,CFG.lhHold-CFG.hsHold));ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,b.r+11,-Math.PI/2,-Math.PI/2+h*Math.PI*2);ctx.stroke();ctx.lineWidth=1}}
     if(b===BH&&P.st==='charge'&&g.gid===P.relG){const h=Math.min(1,(now-P.chT0)/CFG.chf);ctx.strokeStyle=P.chFull?((frameNo>>2)&1?C.mint:'#fff'):C.lime;ctx.lineWidth=P.chFull?6:4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+10,-Math.PI/2,-Math.PI/2+h*Math.PI*2);ctx.stroke();ctx.lineWidth=1;
       otxt(P.chFull?'今！離す':'ため中',b.x,b.y-b.r-24,'800 12px '+UI,P.chFull?C.mint:C.lime)}
   }
@@ -928,6 +931,7 @@ function chkList(){
     L.push({k,st:SN[st],how,nm:MV[k].nm})}
   L.push({k:'throw',st:'立ち',how:'密着で左手を前＋ 弱タップ→強タップ（すばやく）',nm:MV.throw.nm});
   for(const c of CMDS)L.push({k:c.k,st:c.air?'ジャンプ':'コマンド',how:c.l,nm:MV[c.k].nm,cmd:1});
+  L.push({k:'sp_neko',st:'立ち',how:'強を1秒以上ホールド（ふちが金色）→ ←へフリック',nm:MV.sp_neko.nm,cmd:1});
   return L}
 function chkStart(){CHK={list:chkList(),i:0,tries:0,t0:performance.now(),res:[],wait:0};reset();P.x=E.x-70}
 function chkCur(){return CHK&&CHK.i<CHK.list.length?CHK.list[CHK.i]:null}
@@ -982,6 +986,7 @@ const UIDEF=[
   {k:'flickT',l:'フリック：押してから離すまで',min:80,max:400,st:10,u:'ms',n:'これより長くかかった大きな動きは「遅い」で何も出ない（ホールドと分けるため）。'},
   {k:'hsHold',l:'ホールド：止める時間',min:80,max:500,st:10,u:'ms',n:'押して動かさずにこの時間たつと「ホールド」（ボタンのふちが光る）。そのあとスワイプで技。'},
   {k:'hsD',l:'ホールドのあとのスワイプ：距離',min:10,max:60,u:'px'},
+  {k:'lhHold',l:'ロングホールド（白猫の構え）',min:600,max:2000,st:50,u:'ms',n:'強をこの時間より長くホールドしてから ← で白猫の構え（虎雪 16:52）。短いと当て身返し。'},
   {k:'dtol',l:'向きのゆるさ',min:20,max:45,u:'°',n:'45°＝ずれても必ずどれかの向きになる。'},
   {k:'cmdGap',l:'コマンドの間',min:150,max:900,st:10,u:'ms',n:'1手と1手の間がこれより短いと、コマンド技になる（moveset ★0.35秒）。'},
   {k:'cmdBuf',l:'コマンドの先行入力',min:0,max:40,u:'F',n:'前の技が終わる何F前までに入れたコマンドを、終わったら出すか。'},
@@ -1016,7 +1021,7 @@ const UIDEF=[
 const HOW=`<div class="how">
 <b>横持ち・両手</b>。<b>左手（移動）</b>：左半分のどこでも触った所が中心。倒す＝歩く／上＝ジャンプ（斜めで前・後ろ）／下＝しゃがむ／後ろ＝ガード。前・後ろへすばやくはじく＝ダッシュ・バックステップ。<br>
 <b>右手：弱・強の2つのボタン</b>（虎雪 16:00 の形）<br>・<b>タップ</b>＝1技（弱は連打で3段）<br>・<b>フリック</b>＝押してすぐ上下左右にはじいて離す<br>・<b>ホールド→スワイプ</b>＝押して止め、ふちが光ったら上下左右へずらす（立ちだけ別の技。しゃがみ・ジャンプはフリックと同じ技）<br>
-<b>コンボコマンド</b>（1手の間 ${CFG.cmdGap/1000}秒以内。前の技の途中でも入れておける）：${CMDS.map(c=>MV[c.k].nm+'＝'+c.l).join('、')}<br>
+<b>コンボコマンド</b>（1手の間 ${CFG.cmdGap/1000}秒以内。前の技の途中でも入れておける）：${CMDS.map(c=>MV[c.k].nm+'＝'+c.l).join('、')}<br><b>白猫の構え</b>：強を1秒以上ホールド（ふちが金色になる）→ ←へフリック。<br>
 <b>技チェック</b>：上の「技チェック」で、全部の技を順に出していく（左に一覧。出せたら次へ）。</div>
 <div class="tbl" id="howtbl"></div>`;
 function openOv(){buildOv();ov.hidden=false}
@@ -1026,7 +1031,7 @@ function buildOv(){
   h+='<h2>操作</h2>'+HOW;
   h+='<div class="seg"><button type="button" id="ovtask">'+(task?'お題をやめる':'お題を始める（'+TASKS.length+'つ×'+TN+'回）')+'</button></div>';
   h+='<h2>プリセット</h2>';
-  for(let i=1;i<=3;i++){const p=load('smf_pre10_'+i);h+=`<div class="seg"><button type="button" data-pl="${i}">${i}を読む${p?'':'（空）'}</button><button type="button" data-ps="${i}">${i}に保存</button></div>`}
+  for(let i=1;i<=3;i++){const p=load('smf_pre11_'+i);h+=`<div class="seg"><button type="button" data-pl="${i}">${i}を読む${p?'':'（空）'}</button><button type="button" data-ps="${i}">${i}に保存</button></div>`}
   for(const d of UIDEF){
     if(d.h){h+=`<h2>${d.h}</h2>`;continue}
     if(d.o){h+=`<div class="row"><div class="lab">${d.l}</div><div class="seg">`+d.o.map(([v,t])=>`<button type="button" data-k="${d.k}" data-v='${JSON.stringify(v)}' aria-pressed="${CFG[d.k]===v}">${t}</button>`).join('')+`</div>${d.n?`<div class="note">${d.n}</div>`:''}</div>`}
@@ -1045,7 +1050,7 @@ function buildOv(){
   if(CHK&&CHK.res.length){h+='<h2>技チェックの結果</h2><div class="tbl"><table><tr><th>技</th><th>しぐさの回数</th><th>秒</th><th>代わりに出た技</th></tr>';for(const r of CHK.res)h+=`<tr><td>${r.nm}</td><td>${r.skip?'とばした':r.tries}</td><td>${r.sec??'—'}</td><td>${r.miss.slice(0,3).join('、')}</td></tr>`;h+='</table></div>'}
   h+='<div class="seg"><button type="button" id="ovchk">'+(CHK?'技チェックをやめる':'技チェックを始める（全'+chkList().length+'技）')+'</button></div>';
   h+='<div class="seg"><button type="button" id="ovcopy">記録をコピー（QA用）</button><button type="button" id="ovclr">記録を消す</button></div><textarea id="ovtxt" readonly hidden></textarea>';
-  h+=`<div class="note">${VER}・YUKI のみ・右手は弱／強のフリックとホールド→スワイプ（虎雪 16:00）。設定はこの端末に覚えます。</div>`;
+  h+=`<div class="note">${VER}・YUKI のみ・右手は弱／強のフリックとホールド→スワイプ（虎雪 16:00）・白猫の構え＝強ロングホールド←（16:52）。設定はこの端末に覚えます。</div>`;
   ovin.innerHTML=h;
   {const G=[['t','タップ'],['fF','フリック→'],['fB','フリック←'],['fU','フリック↑'],['fD','フリック↓'],['hF','ホールド→'],['hB','ホールド←'],['hU','ホールド↑'],['hD','ホールド↓']];
    let t='<table><tr><th>しぐさ</th><th>立ち 弱</th><th>立ち 強</th><th>しゃがみ 弱</th><th>しゃがみ 強</th><th>空中 弱</th><th>空中 強</th></tr>';
@@ -1056,8 +1061,8 @@ function buildOv(){
   ovin.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{CFG[b.dataset.k]=JSON.parse(b.dataset.v);saveCfg();
     ovin.querySelectorAll(`button[data-k="${b.dataset.k}"]`).forEach(x=>x.setAttribute('aria-pressed',x===b));if(['start','dummy'].includes(b.dataset.k))reset()});
   ovin.querySelectorAll('input[type=range]').forEach(r=>r.oninput=()=>{const k=r.dataset.k,d=UIDEF.find(x=>x.k===k);CFG[k]=+r.value;document.getElementById('v_'+k).textContent=r.value+d.u;saveCfg()});
-  ovin.querySelectorAll('button[data-ps]').forEach(b=>b.onclick=()=>{save('smf_pre10_'+b.dataset.ps,Object.assign({},CFG));b.textContent='保存しました';setTimeout(buildOv,600)});
-  ovin.querySelectorAll('button[data-pl]').forEach(b=>b.onclick=()=>{const p=load('smf_pre10_'+b.dataset.pl);if(!p)return;for(const k in DEF)if(k in p)CFG[k]=p[k];saveCfg();reset();buildOv()});
+  ovin.querySelectorAll('button[data-ps]').forEach(b=>b.onclick=()=>{save('smf_pre11_'+b.dataset.ps,Object.assign({},CFG));b.textContent='保存しました';setTimeout(buildOv,600)});
+  ovin.querySelectorAll('button[data-pl]').forEach(b=>b.onclick=()=>{const p=load('smf_pre11_'+b.dataset.pl);if(!p)return;for(const k in DEF)if(k in p)CFG[k]=p[k];saveCfg();reset();buildOv()});
   document.getElementById('ovchk').onclick=()=>{if(CHK){CHK=null;reset()}else chkStart();closeOv()};
   document.getElementById('ovtask').onclick=()=>{task=task?null:(startTask(),task);reset();closeOv()};
   document.getElementById('ovdef').onclick=()=>{for(const d of UIDEF)if(d.min!==undefined)CFG[d.k]=DEF[d.k];saveCfg();buildOv()};
