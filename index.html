@@ -55,7 +55,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v0.11';
+const VER='v0.12';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -78,15 +78,15 @@ const STATEPOSE={walkF:['walk_f','idle'],walkB:['walk_b','idle'],crouch:['crouch
 // ================= 設定（moveset v2 1章＋虎雪 16:00「フリックとホールドからのスワイプに分ける」） =================
 const DEF={ui:'game',fx:true,hbox:false,hand:'R',easy:false,nexth:true,punch:true,capOn:true,dsz:'std',
   dz:12,follow:60,sflickD:35,sflickT:150,
-  tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,hsHold:180,hsD:24,lhHold:1000,chf:700,cmdGap:350,cmdBuf:24,
+  tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:350,cmdBuf:24,
   cancelF:12,justF:4,parryF:8,buf:8,scale10:60,scaleMin:30,jcap:25,
   bsize:100,bx:0,by:0,stopx:100,
   dummy:'stand',nodmg:true,eburst:false,spinf:false,start:'mid',vib:true,snd:true};
 const CFG=Object.assign({},DEF);
 const load=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-{const s=load('smf_cfg11');if(s)for(const k in DEF)if(k in s)CFG[k]=s[k]}
-const saveCfg=()=>save('smf_cfg11',CFG);
+{const s=load('smf_cfg12');if(s)for(const k in DEF)if(k in s)CFG[k]=s[k]}
+const saveCfg=()=>save('smf_cfg12',CFG);
 
 // ================= 画面（論理の幅360） =================
 const LH=360,PAD=12;let LW=780,S=1,DPR=1,FB=360,ZY=84,FLOORL=310;   // 横持ち（A-017）：論理の高さ360、幅は機種しだい
@@ -162,6 +162,7 @@ const MV={
   sp_hyosho:{nm:'氷床',cmd:1,su:9,ac:12,rc:20,dmg:100,rx:45,dash:100,low:1,kd:1,pop:3,stop:6,sp:15,sk:1,pz:['guard','rush','guard']},
   sp_neko:{nm:'白猫の構え',cmd:1,su:2,ac:20,rc:24,dmg:160,parry:1,pwin:20,plaunch:2,stop:12,sp:15,sk:1,pz:['guard','counter','guard']},
   sp_yukiwari:{nm:'雪割り',cmd:1,su:8,ac:60,rc:0,dmg:120,rx:55,air:1,slam:1,bigb:1,stop:8,sp:15,sk:1,cw:34,pz:['antiair','rush','rush']},
+  ichigeki:{nm:'一撃必殺・白猫終閃',cmd:1,su:8,ac:24,rc:40,dmg:9999,rx:90,hits:[2,8,14,20],inv:80,auto:1,stop:10,fin:1,sk:1,sup:1,ichi:1,pz:['counter','rush','straight']},
   super:{nm:'白猫の護り',cmd:1,su:6,ac:36,rc:24,dmg:40,rx:70,hits:[2,7,12,17,22,27,32],inv:70,auto:1,stop:10,fin:1,sk:1,sup:1,pz:['counter','rush','straight']},
 };
 for(const k in MV){const m=MV[k];m.key=k;const pz=m.pz||['guard','jab','idle'];MOTION[k]=[[k+'_1',m.su,pz[0]],[k+'_2',m.ac,pz[1]],[k+'_3',m.rc||1,pz[2]]]}
@@ -186,6 +187,7 @@ const CMDS=[
   {k:'sp_sekka',seq:['Lt','LfF','LfB'],l:'弱タップ→弱前F→弱後F'},
   {k:'sp_yukiwari',seq:['Lt','HfD'],air:1,l:'空中で 弱タップ→強下F'},
   {k:'sp_hyosho',seq:['LfD','HfD'],l:'弱下F→強下F'},
+  {k:'sp_neko',seq:['LfB','HhB'],l:'弱後F→強ホールド後ろ'},
 ];
 const GLBL={t:'タップ',f:'フリック',h:'ホールド→スワイプ'};
 
@@ -222,7 +224,7 @@ function noise(dur,vol,hp){const a=audio();if(!a)return;const n=Math.floor(a.sam
   const s=a.createBufferSource(),g=a.createGain();g.gain.value=vol;s.buffer=b;let node=s;if(hp){const f=a.createBiquadFilter();f.type='highpass';f.frequency.value=hp;s.connect(f);node=f}node.connect(g).connect(a.destination);s.start()}
 const SE={
   hit:(n,big)=>{const f=180*Math.pow(2,Math.min(n-1,24)/12);noise(big?.12:.06,big?.32:.22,big?0:600);tone('square',f,f*0.5,.07,.09);if(big)tone('sawtooth',f*0.5,40,.18,.08)},
-  whiff:()=>noise(.04,.05,1500),arm:()=>tone('sine',700,700,.04,.04),cmd:()=>{tone('sine',880,1760,.12,.09);tone('sine',1320,2640,.12,.07,.06)},fire:()=>{tone('square',330,990,.08,.07)},fail:()=>tone('triangle',200,140,.08,.06),
+  whiff:()=>noise(.04,.05,1500),arm:()=>tone('sine',700,700,.04,.04),kaku:()=>{tone('sawtooth',110,880,.5,.10);tone('sine',440,1760,.6,.08,.1);noise(.3,.12)},ichi:()=>{tone('sawtooth',60,30,1.0,.16);noise(.6,.2);tone('sine',1760,3520,.4,.08,.6)},cmd:()=>{tone('sine',880,1760,.12,.09);tone('sine',1320,2640,.12,.07,.06)},fire:()=>{tone('square',330,990,.08,.07)},fail:()=>tone('triangle',200,140,.08,.06),
   block:()=>tone('triangle',420,260,.05,.12),sup:()=>{tone('square',220,1760,.4,.10);noise(.25,.08)},
   just:()=>{tone('sine',1760,2640,.09,.10);tone('sine',2640,3520,.08,.07,.05)},parry:()=>{tone('sine',1200,300,.18,.12);noise(.08,.15,2000)},
   charge:()=>tone('sine',600,1200,.08,.08),full:()=>{tone('sine',1320,1320,.06,.09);tone('sine',1760,1760,.08,.09,.06)},
@@ -292,8 +294,7 @@ function btnMove(g,p,t){
   g.dir=dd>=CFG.flickD*0.5?dirOf(dx,dy).d:null;
   if(g.armed&&!g.spent&&dd>=CFG.hsD){const r=dirOf(dx,dy);g.spent=true;
     if(r.off>CFG.dtol){failAt(g,'向きがずれた',BNM[g.b.k]+'ホールド');return}
-    const lng=g.b===BH&&t-g.t0>=CFG.lhHold;   // 強を1秒以上ホールド＝ロングホールド（白猫の構え）
-    inQ.push(gesture(g,lng?'l':'h',r.d,BNM[g.b.k]+(lng?'ロングホールド':'ホールド')+DIRK[r.d]))}
+    inQ.push(gesture(g,'h',r.d,BNM[g.b.k]+'ホールド'+DIRK[r.d]))}
 }
 function dirOf(dx,dy){const a=Math.atan2(-dy,dx)*180/Math.PI;const c=[['F',0],['U',90],['B',180],['B',-180],['D',-90]];
   let best=null,bd=1e9;for(const [d,v] of c){const df=Math.abs(a-v);if(df<bd){bd=df;best=d}}return {d:best,off:bd,a}}
@@ -301,12 +302,12 @@ function up(e){
   const g=PT.get(e.pointerId);if(!g)return;PT.delete(e.pointerId);if(SIDE[g.side]===g)SIDE[g.side]=null;
   const t=performance.now();if(g.kind==='btn')release(g,t,e.type==='pointercancel');
 }
-const gesture=(g,gt,dir,label,extra)=>Object.assign({kind:'g',btn:g.b.k,gt,dir,g:label,x:g.x,y:g.y,gid:g.gid,pressTap:g.pressed},extra||{});
+const gesture=(g,gt,dir,label,extra)=>Object.assign({kind:'g',btn:g.b.k,gt,dir,g:label,x:g.x,y:g.y,gid:g.gid,pressTap:g.pressed,t0:g.t0},extra||{});
 function release(g,t,cancel){
   if(cancel)return;
-  if(g.spent){inQ.push({kind:'rel',gid:g.gid,x:g.x,y:g.y});return}   // ため・伏せは離した時に出す
+  if(g.spent){if(!g.kakuDone)inQ.push({kind:'rel',gid:g.gid,x:g.x,y:g.y});return}   // ため・伏せは離した時に出す
   const bn=BNM[g.b.k];
-  if(g.armed){if(g.maxd<CFG.hsD){gRec(bn+'ホールドだけ',false,'ホールドだけ');fingerPop('ホールドだけ（何も出ない）',g.x,g.y,false)}return}
+  if(g.armed){if(g.maxd<CFG.hsD)gRec(bn+'ホールドだけ',false,'ホールドだけ');return}
   const dur=t-g.t0,dd=Math.hypot(g.x-g.x0,g.y-g.y0);
   if(dd>=CFG.flickD){const r=dirOf(g.x-g.x0,g.y-g.y0);
     if(dur>CFG.flickT){failAt(g,'フリックが遅い',bn+'フリック'+DIRK[r.d]);return}
@@ -325,7 +326,8 @@ function holdCheck(){
   const now=performance.now();
   for(const g of PT.values()){
     if(g.kind!=='btn'||g.spent)continue;
-    if(!g.armed&&g.maxd<CFG.tapd&&now-g.t0>=CFG.hsHold){g.armed=true;g.tArm=now;g.x0=g.x;g.y0=g.y;SE.arm()}
+    if(!g.armed&&g.maxd<CFG.tapd&&now-g.t0>=CFG.hsHold){g.armed=true;g.tArm=now;g.x0=g.x;g.y0=g.y;SE.arm();inQ.push({kind:'tok',k:g.b.k+'hN',gid:g.gid,x:g.x,y:g.y})}
+    if(g.armed&&!g.spent&&g.b===BH&&g.maxd<CFG.hsD&&now-g.t0>=CFG.lhHold&&!P.kaku&&P.st!=='stun'){g.spent=true;g.kakuDone=true;inQ.push({kind:'kaku',x:g.x,y:g.y})}
     if(g.armed&&g.b===BH&&P.st==='stun'&&canBurst()&&now-g.t0>=400&&g.maxd<CFG.tapd){g.spent=true;inQ.push({kind:'burst'})}
   }
 }
@@ -335,13 +337,13 @@ function stickVec(){const g=SIDE[stickRight()?'R':'L'];if(!g||g.kind!=='stick')r
 const sUp=s=>s>=1&&s<=3,sDown=s=>s>=5&&s<=7,sFwd=s=>s===0||s===1||s===7,sBack=s=>s>=3&&s<=5;
 
 // ================= 状態 =================
-let P,E,frameNo=0,freeze=0,shake=0,punch=0,PF={x:0,y:0},flash=0,flashC='#fff',cutin=0,big=null,pops=[],fpops=[],sparks=[],dusts=[],ghosts=[],rings=[],
+let ichi=0,P,E,frameNo=0,freeze=0,shake=0,punch=0,PF={x:0,y:0},flash=0,flashC='#fff',cutin=0,big=null,pops=[],fpops=[],sparks=[],dusts=[],ghosts=[],rings=[],
   combo=0,comboDmg=0,comboSup=false,comboBounce=false,comboFin=false,comboShow=0,lastCombo=null,CAMX=180,CAMY=0;
 const CMDH=[],SPH=[];let slowT=0;   // コマンドを見るための、しぐさの履歴（直近6手）
 function reset(){
   const mid=STW/2,wall=CFG.start==='wall';
   P={x:wall?XR-W.start-30:mid-W.start/2,y:0,vx:0,vy:0,st:'idle',t:0,mv:null,hit:false,sinceHit:99,canc:0,airDash:false,inv:0,queued:null,qT:0,
-     sp:spFull()?100:50,hp:1000,stun:0,burstUsed:false,chT0:0,chFull:false,just:false,air:{chain:0},jdir:0,relKey:null,relG:0,once:{}};
+     sp:spFull()?100:50,hp:1000,stun:0,burstUsed:false,chT0:0,chFull:false,just:false,air:{chain:0},jdir:0,relKey:null,relG:0,once:{},kaku:0,kakuUsed:false,cmdPath:false};
   E={x:wall?XR-30:mid+W.start/2,y:0,vx:0,vy:0,st:'idle',t:0,stun:0,hp:1000,cd:70,atk:null,airT:0,bounced:false,slam:false,wallUsed:false,ko:0,idle:0,burstUsed:false};
   CAMX=(P.x+E.x)/2;CAMY=0;CMDH.length=0;endCombo(true);
 }
@@ -362,6 +364,8 @@ function request(a){
     case 'rel':return doRelease(a);
     case 'sflick':return doSFlick(a);
     case 'burst':return doBurst();
+    case 'kaku':return doKaku(a);
+    case 'tok':return doTok(a);
   }
 }
 function okMove(a,m,extra){if(a&&a.g){gRec(a.g,true);fingerPop((a.dir&&!m.cmd?DIRK[a.dir]+' ':'')+m.nm+(extra||''),a.x,a.y,true);taskMis(a.g)}hist((a&&a.g?a.g+'：':'')+m.nm+(extra||''),true)}
@@ -374,7 +378,7 @@ function tokenOf(a){return a.btn+(a.gt==='t'?'t':(a.gt==='l'?'h':a.gt)+a.dir)}
 function doGesture(a){
   const tk=tokenOf(a),now=performance.now();
   const prev=CMDH[CMDH.length-1];
-  CMDH.push({k:tk,t:now});if(CMDH.length>6)CMDH.shift();
+  CMDH.push({k:tk,t:now,ts:a.gt==='h'?(a.t0||now):now});if(CMDH.length>6)CMDH.shift();
   chkTry();
   // 投げ：密着で前＋弱タップ→強タップ（0.1秒以内）
   if(tk==='Ht'&&prev&&prev.k==='Lt'&&now-prev.t<=100&&sFwd(stickVec().s)&&E.x-P.x<=46&&E.y===0&&!['juggle','down','tech'].includes(E.st)){exec('throw',a,true);return}
@@ -385,50 +389,66 @@ function doGesture(a){
   if(a.gt==='t'&&P.st==='atk'&&P.mv.launch&&P.hit&&E.st==='juggle'){startChase(a);return}
   if(P.st==='chase'&&a.gt==='t'){P.queued=a;P.qT=24;return}
   if(P.st==='stun'||P.st==='block'){ngMove(a,'やられ中');return}
-  if(a.gt==='l'){if(a.dir==='B'&&stanceNow()==='stand'){exec('sp_neko',a,true);return}a=Object.assign({},a,{gt:'h'})}
   const st=stanceNow(),gk=a.gt==='t'?'t':a.gt+a.dir;
   let k=(GRID[st][a.btn]||{})[gk];
   if(!k){ngMove(a,'この技はなし');return}
   // タップの連打（ジャブ→ワンツー→回し蹴り など）
   if(a.gt==='t'&&P.st==='atk'&&P.mv.nx&&(k==='s_lp1'&&P.mv.key.startsWith('s_lp')||k==='j_lp1'&&P.mv.key.startsWith('j_lp')))k=P.mv.nx;
-  exec(k,a,!!a.replaceTap);
+  exec(k,a,false,false,!!a.replaceTap);
 }
 function tokMatch(p,k){return p[0]==='*'?k.slice(1)===p.slice(1):p===k}
 function matchCmd(now){
   for(const c of CMDS){const n=c.seq.length;if(CMDH.length<n)continue;
     if(c.k==='super'&&P.sp<100&&!spFull())continue;
     const tail=CMDH.slice(-n);let ok=true;
-    for(let i=0;i<n;i++){if(!tokMatch(c.seq[i],tail[i].k)){ok=false;break}if(i&&tail[i].t-tail[i-1].t>CFG.cmdGap){ok=false;break}}
+    for(let i=0;i<n;i++){if(!tokMatch(c.seq[i],tail[i].k)){ok=false;break}if(i&&(tail[i].ts||tail[i].t)-tail[i-1].t>CFG.cmdGap){ok=false;break}}
     if(!ok)continue;const air=P.y<0||P.st==='jump'||P.st==='adash';if(c.air&&!air)continue;if(!c.air&&c.k!=='super'&&air)continue;
     return c}
   return null}
-function canStart(m,cmd){ // いま出せるか（キャンセルも含む）。戻り値：false／{cancel,just}
+function cmdPrefix(){ // いまの手が、どれかのコマンドの2手目以降の途中か
+  const now=performance.now();
+  for(const c of CMDS){if(c.k==='super'&&P.sp<100&&!spFull())continue;const n=c.seq.length;
+    for(let m=Math.min(n-1,CMDH.length);m>=2;m--){const tl=CMDH.slice(-m);let ok=true;
+      for(let i=0;i<m;i++){if(!tokMatch(c.seq[i],tl[i].k)){ok=false;break}if(i&&(tl[i].ts||tl[i].t)-tl[i-1].t>CFG.cmdGap){ok=false;break}}
+      if(ok)return c}}
+  return null}
+function canStart(m,cmd,path,replace){ // いま出せるか（キャンセルも含む）。戻り値：false／{cancel,just}
   if(m.air?airFree():groundFree())return {cancel:false};
   if(m.air&&P.st==='chase')return false;
   if(P.st==='atk'){const c=P.mv;
     if(!!m.air!==!!c.air&&!m.sup)return false;
-    if(cmd&&(c.nrm||c.key==='cnt'||P.t<=c.su+c.ac+2||inCancel(c)))return {cancel:true,cmd:true,just:inCancel(c)&&isJust(c)};   // 通常技からはいつでも（空振りでも）   // コマンドは途中の技を打ち消して出す（当たっていなくても）
+    if(c.stance&&m.sk)return {cancel:true};
+    if(replace&&P.t<=6)return {cancel:true};   // 押した瞬間のタップを、すぐ動いたら置き換える
+    if(cmd){   // コマンド：途中の技が当たるのを待ってから締める（虎雪 17:12）。空振りなら当たる時間が過ぎてから
+      if(inCancel(c))return {cancel:true,cmd:true,just:isJust(c)};
+      if(!P.hit&&P.t<=c.su+c.ac)return false;
+      if(c.nrm||c.key==='cnt'||c.parry)return {cancel:true,cmd:true};
+      if(c.sk&&P.canc<2&&(P.kaku||P.sp>=15||spFull()))return {cancel:true,cmd:true,sk2:true};
+      return false}
     if(!inCancel(c)){if(m.nrm&&c.nx===m.key&&P.t>=c.su+c.ac)return {cancel:true};return false}
-    if(m.nrm){if(!c.nrm)return false;if(c.nx===m.key||(m.rk||1)>(c.rk||1))return {cancel:true};return false}   // 通常技→通常技は 弱→強 と連打だけ
+    if(m.nrm){if(!c.nrm)return false;if(c.nx===m.key||(m.rk||1)>(c.rk||1)||path)return {cancel:true};return false}   // 通常技→通常技は 弱→強・連打・コマンドの途中だけ
     if(c.nrm||c.key==='cnt')return {cancel:true,just:isJust(c)};
     if(c.sk&&P.canc<2&&c.key!==m.key)return {cancel:true,just:isJust(c),sk2:true};
     return false}
   if(P.st==='land'&&P.hit&&P.sinceHit<=40&&!m.air)return {cancel:true};
   return false;
 }
-function exec(k,a,cmd,fromQueue){
+function exec(k,a,cmd,fromQueue,replace){
   const m=MV[k];if(!m)return false;
-  const cs=canStart(m,cmd);
+  const path=!cmd&&m.nrm?cmdPrefix():null;
+  const cs=canStart(m,cmd,!!path,replace);
   if(!cs){
+    // 当たり待ち：前の技が出始め〜当たっている間なら、当たったら（空振りなら終わったら）出す
+    if(!fromQueue&&P.st==='atk'&&!P.hit&&P.t<=P.mv.su+P.mv.ac+1){P.queued=cmd?{kind:'cmd',k,a}:Object.assign({},a,{wait:1});P.qT=tot(P.mv)-P.t+CFG.buf;hist('先行入力：'+m.nm,true);return true}
     if(cmd){if(!fromQueue&&queue({kind:'cmd',k,a},CFG.cmdBuf)){hist('先行入力：'+m.nm,true);return true}if(!fromQueue)ngMove(a,'動けない間');return false}
     if(queue(a))return true;if(a&&a.g)gRec(a.g,false,'動けない間');hist('（動けない間）'+(a.g||''),false);return false}
-  if(cs.sk2){if(P.sp<15&&!spFull()){ngMove(a,'SP不足（技→技）');return false}P.sp-=15;P.canc++}
+  if(cs.sk2&&!P.kaku){if(P.sp<15&&!spFull()){ngMove(a,'SP不足（技→技）');return false}P.sp-=15;P.canc++}
   if(m.sup){if(P.sp<100&&!spFull()){ngMove(a,'SP不足');return false}if(!spFull())P.sp=0}
-  const weak=m.sp>0&&!m.sup&&P.sp<m.sp&&!spFull();if(!weak&&m.sp&&!m.sup)P.sp-=m.sp;
+  const weak=m.sp>0&&!m.sup&&!P.kaku&&P.sp<m.sp&&!spFull();if(!weak&&m.sp&&!m.sup&&!P.kaku)P.sp-=m.sp;
   // 離した時に出す技（ため・伏せ）
   if(m.rel){P.st=m.rel;P.t=0;P.relKey=k;P.relG=a.gid;P.chT0=performance.now();P.chFull=false;SE.charge();hist((a.g||'')+'：'+m.nm+'（離すと出る）',true);fingerPop(m.nm+'（離す）',a.x,a.y,true);if(a.g)gRec(a.g,true);return true}
   const prevN=P.st==='atk'&&P.mv.nrm;
-  setMove(k,cs.cancel);P.just=!!cs.just;P.weak=weak;P.launchFromN=cs.cancel&&prevN;
+  setMove(k,cs.cancel);P.just=!!cs.just;P.weak=weak;P.launchFromN=cs.cancel&&prevN;P.cmdPath=!!path;
   if(P.just){ST.just++;bigText('JUST',C.mint);SE.just();vib(12)}
   else if(m.sk)SE.fire();else SE.whiff();
   okMove(a,m,weak?'（弱）':'');
@@ -482,6 +502,24 @@ function doBurst(){
   E.st='stun';E.stun=34;E.vx=6;E.atk=null;flash=10;flashC='rgba(95,242,224,';bigText('BURST',C.mint);SE.burst();vib(30);shake=6;
   rings.push({x:P.x,y:P.y-55,t:18,c:C.mint});hist('バースト',true);gRec('バースト',true);
 }
+function doTok(a){ // 動かさないホールド（N）を、コマンドの手として数える
+  const now=performance.now();const prev=CMDH[CMDH.length-1];CMDH.push({k:a.k,t:now,ts:now});if(CMDH.length>6)CMDH.shift();
+  if(a.k==='HhN'&&P.kaku>0&&prev&&prev.k==='LhN'&&now-prev.t<=CFG.cmdGap+CFG.hsHold+200)doIchigeki(a);
+}
+function doKaku(a){ // 覚醒モード：強を1秒以上ホールド（虎雪 17:12）
+  if(P.kakuUsed){fingerPop('覚醒は1ラウンド1回',a.x,a.y,false);return}
+  if(P.sp<CFG.kakuSP&&!spFull()){fingerPop('覚醒：SPが足りない（'+CFG.kakuSP+'）',a.x,a.y,false);gRec('強ロングホールド',false,'SP不足');return}
+  if(!(groundFree()||airFree()||P.st==='charge'||P.st==='duck')){fingerPop('× 動けない間',a.x,a.y,false);return}
+  if(!spFull())P.sp-=CFG.kakuSP;P.kaku=CFG.kakuSec*60;P.kakuUsed=true;P.st=P.y<0?'jump':'idle';P.relKey=null;
+  freeze=34;flash=14;flashC='rgba(255,210,61,';shake=8;SE.kaku();vib([40,30,60]);bigText('覚醒',C.gold);rings.push({x:P.x,y:P.y-55,t:24,c:C.gold});
+  gRec('強ロングホールド',true);hist('覚醒モード',true);fingerPop('覚醒モード',a.x,a.y,true);ST.kaku=(ST.kaku||0)+1;chkDone('kaku');
+}
+function doIchigeki(a){ // 一撃必殺：覚醒中に 弱N ホールド → 強N ホールド
+  const ok=groundFree()||airFree()||(P.st==='atk'&&(P.mv.nrm||inCancel(P.mv)));
+  if(!ok){fingerPop('× 動けない間',a.x,a.y,false);return}
+  for(const g of PT.values())if(g.kind==='btn')g.spent=true;
+  setMove('ichigeki',true);P.inv=1;P.kaku=0;ichi=60;freeze=60;SE.ichi();vib([60,40,120]);ST.ichi=(ST.ichi||0)+1;hist('一撃必殺',true);fingerPop('一撃必殺',a.x,a.y,true);chkDone('ichigeki');
+}
 function startChase(a){P.st='chase';P.t=0;P.cx0=P.x;P.cy0=P.y;P.air.chain=0;P.queued={kind:'g',btn:'L',gt:'t',g:null,x:a.x,y:a.y};P.qT=30;ST.chase++;SE.jump();
   gRec(a.g,true);hist('追いかけジャンプ',true);fingerPop('追いかけ',a.x,a.y,true);
   if(curTask()&&curTask().k==='chase')P.tChase=true}
@@ -516,14 +554,16 @@ function hitE(m,opt){
   if(!wasCombo&&(E.st==='atk'||(E.y<0&&E.st!=='juggle'))){ctr=true}
   if(opt.counter)ctr=true;
   if(ctr){dmg*=1.2;bigText('COUNTER',C.lime);ST.counter++;if(combo===0)P.ctrStart=true}
+  if(P.kaku)dmg*=1.15;
   if(P.just)dmg*=1.2;if(P.weak)dmg*=0.7;if(P.easy)dmg*=0.85;if(P.ctrStart)dmg*=1.1;if(P.stanceBoost)dmg*=1.15;
   dmg*=scaleOf(n);
+  if(m.ichi){dmg=opt.multi?40:Math.max(1,E.hp-40*3)}
   const fin=!opt.multi&&(m.fin||((m.sk||m.kb>=4)&&!m.slam&&!m.launch&&E.st==='juggle'&&E.bounced)||opt.fin||(m.charge&&P.just));
   const cap=comboSup||m.sup?500:400;
   dmg=Math.max(1,Math.round(dmg));
-  if(CFG.capOn&&comboDmg+dmg>cap)dmg=Math.max(1,cap-comboDmg);
+  if(CFG.capOn&&!m.ichi&&comboDmg+dmg>cap)dmg=Math.max(1,cap-comboDmg);
   combo=n;comboDmg+=dmg;comboShow=90;ST.max=Math.max(ST.max,combo);ST.maxDmg=Math.max(ST.maxDmg,comboDmg);
-  if(!(CFG.nodmg&&dummyMode()!=='attack'))E.hp=Math.max(0,E.hp-dmg);
+  if(!(CFG.nodmg&&dummyMode()!=='attack')||m.ichi)E.hp=Math.max(0,E.hp-dmg);
   P.hit=true;P.hitDone=true;P.sinceHit=0;P.hitN=(P.hitN||0)+1;
   E.atk=null;
   const air=E.y<0||E.st==='juggle';
@@ -537,7 +577,7 @@ function hitE(m,opt){
   else if(m.pop||m.charge){E.st='juggle';E.vy=-((m.pop||4.5)+(P.lv||0)*2);E.vx=m.kb||1.2}
   else if(air&&m.air){E.st='juggle';E.vy=m.adv?-2.6:-2.1;E.vx=m.kb||0.3;P.vy=Math.min(P.vy,-2.0)}
   else if(air){E.st='juggle';E.vy=Math.min(E.vy,-3.5);E.vx=m.kb||1}
-  else{E.st='stun';E.stun=(m.stun||18)+(ctr?10:0);E.vx=m.kb||0.4}
+  else{E.st='stun';E.stun=(m.stun||18)+(ctr?10:0)+(P.cmdPath?8:0);E.vx=P.cmdPath?Math.min(m.kb||0.4,1):(m.kb||0.4)}
   if(E.st==='juggle'&&fin&&!m.sup){E.vx=Math.max(E.vx,3.4);E.vy=Math.min(E.vy,-4)}
   // 手ごたえ
   let stop=opt.multi?2:(m.stop||3);if(fin)stop=10;freeze=Math.max(freeze,Math.round(stop*CFG.stopx/100));
@@ -551,7 +591,8 @@ function hitE(m,opt){
   const tk=curTask();
   if(tk){if(tk.k==='launch'&&m.launch){taskTry('launch',!!P.launchFromN)}
     if(tk.k==='chase'&&m.air&&m.nrm&&P.tChase){P.tChase=false;taskTry('chase',true)}}
-  if(E.hp<=0){E.ko=90;bigText('K.O.',C.crim)}
+  if(m.ichi&&!opt.multi){E.hp=0;flash=20;flashC='rgba(255,255,255,';bigText('一撃必殺',C.crim)}
+  if(E.hp<=0){E.ko=90;if(!m.ichi)bigText('K.O.',C.crim)}
   if(CFG.eburst&&!E.burstUsed&&combo>=8){E.burstUsed=true;E.inv=20;P.st='stun';P.stun=30;P.vx=-4;flash=8;flashC='rgba(224,48,74,';bigText('BURST',C.crim);SE.burst();rings.push({x:E.x,y:E.y-55,t:18,c:C.crim});E.st='idle';E.y=0;endCombo()}
 }
 function startCombo(){P.once={};combo=0;comboDmg=0;comboSup=false;comboBounce=false;comboFin=false;P.ctrStart=false;E.wallUsed=false;E.bounced=false;E.airT=0}
@@ -588,13 +629,16 @@ function eHitsP(dmg){
 // ================= 1フレーム =================
 function step(){
   frameNo++;
-  holdCheck();
+  holdCheck();chkTick();
   while(inQ.length)request(inQ.shift());
-  if(freeze>0){freeze--;if(cutin>0)cutin--;if(punch>0&&cutin<=0)punch--;return}
+  if(freeze>0){freeze--;if(ichi>0)ichi--;if(cutin>0)cutin--;if(punch>0&&cutin<=0)punch--;return}
   if(cutin>0)cutin--;if(punch>0)punch--;
   if(spFull())P.sp=100;
+  if(P.kaku>0&&--P.kaku===0){hist('覚醒おわり',true);pop('覚醒おわり',P,C.dim,13)}
+  if(ichi>0)ichi--;
   if(P.queued){P.qT--;const q=P.queued;
-    const ok=P.st!=='chase'&&(groundFree()||airFree()||(P.st==='atk'&&inCancel(P.mv))||(P.st==='atk'&&P.t>=tot(P.mv)-1));
+    const waiting=P.st==='atk'&&!P.hit&&P.t<=P.mv.su+P.mv.ac;
+    const ok=P.st!=='chase'&&!waiting&&(groundFree()||airFree()||(P.st==='atk'&&(inCancel(P.mv)||P.t>P.mv.su+P.mv.ac&&(q.kind==='cmd'||q.wait)))||(P.st==='atk'&&P.t>=tot(P.mv)-1));
     if(ok){P.queued=null;request(q)}else if(P.qT<=0)P.queued=null}
   updateP();updateE();
   // 押し合い・端・最大の間合い（rules 1-6）
@@ -610,7 +654,6 @@ function step(){
   for(const d of dusts){d.t--;d.x+=d.vx;d.y-=0.25}dusts=dusts.filter(d=>d.t>0);for(const g of ghosts)g.t--;ghosts=ghosts.filter(g=>g.t>0);
   if(CFG.fx&&(frameNo&1)&&((['dash','back','adash','chase','burst'].includes(P.st)||(P.st==='jump'&&P.jdir))||(P.st==='atk'&&(P.mv.dash||P.mv.adv||P.mv.slam||P.mv.sup||P.mv.launch)&&P.t<=P.mv.su+P.mv.ac)))ghosts.push({x:P.x,y:P.y,pose:poseP(),t:10});
   for(const h of HIST)h.t--;
-  chkTick();
   if(big&&--big.t<=0)big=null;if(toast&&--toast.t<=0)toast=null;
 }
 function airPhys(g){P.vy+=g||PGRAV;P.y+=P.vy;P.x+=P.vx;if(P.y>=0){P.y=0;P.vy=0;return true}return false}
@@ -799,8 +842,11 @@ function renderWorld(){
   const eWhite=(E.st==='stun'||E.st==='juggle')&&(frameNo&2)&&freeze>0;
   drawChar('NANA',E,poseE(),true,E.ko?0.6:E.st==='tech'?0.6:1,eWhite);
   if(flash>0&&false){}
+  if(P.kaku>0||ichi>0){c.setTransform(ZP,0,0,ZP,OX,OY);c.globalCompositeOperation='lighter';const pr=0.5+0.5*Math.sin(frameNo/5),R=58+pr*8;const gr=c.createRadialGradient(P.x,P.y-50,6,P.x,P.y-50,R);gr.addColorStop(0,'rgba(255,210,61,'+(0.38+0.18*pr)+')');gr.addColorStop(1,'rgba(255,210,61,0)');c.fillStyle=gr;c.beginPath();c.arc(P.x,P.y-50,R,0,7);c.fill();
+    if(CFG.fx&&(frameNo%3===0))sparks.length<40&&dusts.push({x:P.x+(Math.random()-.5)*50,y:P.y-Math.random()*90,vx:0,t:12,s:2});c.globalCompositeOperation='source-over';c.setTransform(1,0,0,1,0,0)}
   const pWhite=(P.st==='stun'&&(frameNo&2))||(P.st==='charge'&&P.chFull&&(frameNo&4))||(P.st==='atk'&&P.mv.parry&&P.t>P.mv.su&&(frameNo&4));
   drawChar('YUKI',P,poseP(),false,P.inv&&P.st!=='atk'?0.55:1,pWhite);
+  if(P.kaku>0&&(frameNo&8)){c.globalCompositeOperation='lighter';drawChar('YUKI',P,poseP(),false,0.12,true);c.globalCompositeOperation='source-over'}   // 覚醒中：体が金色にゆらめく
   c.setTransform(ZP,0,0,ZP,OX,OY);
   // 相手の攻撃の予告
   if(E.st==='atk'&&E.atk&&!E.atk.air&&E.t<=E.atk.su){c.strokeStyle='rgba(224,48,74,'+(0.3+0.7*E.t/E.atk.su)+')';c.lineWidth=0.8;c.beginPath();c.arc(E.x-30,E.y-60,6+E.t*0.6,0,7);c.stroke()}
@@ -834,6 +880,7 @@ function render(){
   const spMax=P.sp>=100;bar(46,32,92,5,P.sp/100,spMax?((frameNo>>3)&1?C.mint:C.lime):'#3d8f86');txt(spMax?'SP MAX':'SP',142,29,'700 9px '+UI,spMax?C.mint:C.dim);
   [15,50].forEach(v=>{ctx.fillStyle='rgba(5,7,12,.9)';ctx.fillRect(46+92*v/100,32,1,5)});
   if(P.burstUsed)txt('BURST済',142,40,'700 8px '+UI,C.dim);
+  if(P.kaku>0){bar(46,42,92,4,P.kaku/(CFG.kakuSec*60),(frameNo>>2)&1?C.gold:'#fff');txt('覚醒 '+(P.kaku/60).toFixed(1),142,41,'800 9px '+UI,C.gold)}
   // ---- コンボの数とダメージ（rules 2-4：相手の横に大きく） ----
   const cn=combo||((lastCombo&&lastCombo.t>0)?lastCombo.n:0),cd=combo?comboDmg:(lastCombo?lastCombo.dmg:0);
   if(cn>=2){const q=w2ui(E.x,E.y-90),x=Math.min(LW-70,Math.max(70,q.x+44)),y=Math.max(100,Math.min(LH-120,q.y));
@@ -846,7 +893,10 @@ function render(){
     ctx.save();ctx.translate(LW/2,FB*0.36);ctx.rotate(-0.12);ctx.fillStyle='rgba(198,255,61,'+(0.92*k)+')';ctx.fillRect(-LW,-34,LW*2,68);
     ctx.globalAlpha=k;if(IMG.face_y)ctx.drawImage(IMG.face_y,-150,-30,60,60);
     txt('白猫の護り',30,-2,'900 30px '+UI,C.bg,'center','middle');txt('YUKI　超必殺',30,24,'700 11px '+UI,C.bg,'center','middle');ctx.restore();ctx.globalAlpha=1}
-  if(big&&!cutin&&big.s){const a=Math.min(1,big.t/10),sc=1+Math.max(0,(big.t-40)/20);ctx.globalAlpha=a;ctx.save();ctx.translate(LW/2,FB*0.3);ctx.scale(sc,sc);otxt(big.s,0,0,'italic 900 30px '+UI,big.c,'center','middle',6);ctx.restore();ctx.globalAlpha=1}
+  if(ichi>0){const k=Math.min(1,(60-ichi)/10)*Math.min(1,ichi/8);ctx.fillStyle='rgba(0,0,0,'+(0.7*k)+')';ctx.fillRect(0,0,LW,LH);
+    ctx.fillStyle='rgba(224,48,74,'+(0.9*k)+')';ctx.fillRect(0,LH*0.38,LW,LH*0.24);ctx.globalAlpha=k;if(IMG.face_y)ctx.drawImage(IMG.face_y,LW/2-230,LH*0.38+6,74,74);
+    otxt('一撃必殺',LW/2+20,LH*0.47,'italic 900 42px '+UI,'#fff');otxt('白猫終閃',LW/2+20,LH*0.56,'800 14px '+UI,'#fff');ctx.globalAlpha=1}
+  if(big&&!cutin&&!ichi&&big.s){const a=Math.min(1,big.t/10),sc=1+Math.max(0,(big.t-40)/20);ctx.globalAlpha=a;ctx.save();ctx.translate(LW/2,FB*0.3);ctx.scale(sc,sc);otxt(big.s,0,0,'italic 900 30px '+UI,big.c,'center','middle',6);ctx.restore();ctx.globalAlpha=1}
   // ---- 上のボタン ----
   FBTN.length=0;
   const btn=(label,x,w,fn,on,yy)=>{const b={x,y:yy||48,w,h:30,fn};FBTN.push(b);rr(b.x,b.y,b.w,b.h,6);ctx.fillStyle=on?C.lime:'rgba(20,24,33,.8)';ctx.fill();ctx.strokeStyle=on?C.lime:C.line;ctx.stroke();txt(label,b.x+w/2,b.y+16,'700 13px '+UI,on?C.bg:C.fg,'center','middle')};
@@ -891,7 +941,7 @@ function drawButtons(){
     const g=[...PT.values()].find(q=>q.kind==='btn'&&q.b===b),on=!!g,col=b===BL?C.lime:C.mint;
     ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,7);ctx.fillStyle=on?(b===BL?'rgba(52,64,30,.85)':'rgba(30,58,56,.85)'):'rgba(20,24,34,.55)';ctx.fill();
     const glow=nh&&nh.b===b.k&&nh.d==='T';
-    ctx.strokeStyle=glow?`rgba(198,255,61,${pulse})`:col;ctx.lineWidth=glow?4:2;ctx.stroke();ctx.lineWidth=1;
+    ctx.strokeStyle=glow?`rgba(198,255,61,${pulse})`:P.kaku?C.gold:col;ctx.lineWidth=glow?4:P.kaku?3:2;ctx.stroke();ctx.lineWidth=1;
     txt(BNM[b.k],b.x,b.y+1,'900 22px '+UI,on?col:C.fg,'center','middle');
     const R=b.r+20,grid=GRID[st][b.k]||{};
     if(!on&&nh&&nh.b===b.k){if(nh.d==='T')otxt(nh.s,b.x,b.y+b.r+12,'800 11px '+UI,C.lime);
@@ -902,13 +952,14 @@ function drawButtons(){
     const live=g.dir;
     [['F',1,0],['U',0,-1],['D',0,1],['B',-1,0]].forEach(([d,ux,uy])=>{
       const L=live===d&&!g.spent,ax=b.x+ux*R,ay=Math.min(LH-10,b.y+uy*R);
-      const lng=b===BH&&g.armed&&now-g.t0>=CFG.lhHold&&st==='stand';
-      if(g.armed&&!g.spent){ctx.strokeStyle=lng?C.gold:col;ctx.lineWidth=lng?6:4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+6,0,7);ctx.stroke();ctx.lineWidth=1;
-        const k=lng&&d==='B'?'sp_neko':grid['h'+d],tx=DIRK[d]+(k?' '+MV[k].nm:''),fn='800 '+(L?13:11)+'px '+UI;ctx.font=fn;const hw=ctx.measureText(tx).width/2;otxt(tx,Math.max(hw+6,Math.min(LW-hw-6,b.x+ux*(R+26))),Math.min(LH-10,b.y+uy*(R+6)),fn,L?col:'rgba(230,239,232,.75)')}
+      if(g.armed&&!g.spent){ctx.strokeStyle=col;ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+6,0,7);ctx.stroke();ctx.lineWidth=1;
+        const k=grid['h'+d],tx=DIRK[d]+(k?' '+MV[k].nm:''),fn='800 '+(L?13:11)+'px '+UI;ctx.font=fn;const hw=ctx.measureText(tx).width/2;otxt(tx,Math.max(hw+6,Math.min(LW-hw-6,b.x+ux*(R+26))),Math.min(LH-10,b.y+uy*(R+6)),fn,L?col:'rgba(230,239,232,.75)')}
       else otxt(DIRK[d],ax,ay,'900 '+(L?22:14)+'px '+UI,L?col:'rgba(230,239,232,.3)','center','middle',3);
     });
-    if(g.armed&&!g.spent){const lng=b===BH&&now-g.t0>=CFG.lhHold&&st==='stand';otxt(lng?'ロングホールド：← で白猫の構え':'ホールド：スワイプで技',b.x,b.y-b.r-44,'800 12px '+UI,lng?C.gold:col);
-      if(b===BH&&!lng&&st==='stand'&&g.maxd<CFG.tapd){const h=Math.min(1,(now-g.t0-CFG.hsHold)/Math.max(1,CFG.lhHold-CFG.hsHold));ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,b.r+11,-Math.PI/2,-Math.PI/2+h*Math.PI*2);ctx.stroke();ctx.lineWidth=1}}
+    if(g.armed&&!g.spent){
+      const kakuOk=b===BH&&!P.kaku&&!P.kakuUsed&&(P.sp>=CFG.kakuSP||spFull())&&g.maxd<CFG.hsD;
+      otxt(P.kaku&&b===BL?'このまま 強もホールドで 一撃必殺':kakuOk?'スワイプで技／このまま押さえると覚醒':'ホールド：スワイプで技',b.x,b.y-b.r-44,'800 12px '+UI,P.kaku&&b===BL?C.crim:col);
+      if(kakuOk){const h=Math.min(1,(now-g.t0-CFG.hsHold)/Math.max(1,CFG.lhHold-CFG.hsHold));ctx.strokeStyle=C.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc(b.x,b.y,b.r+11,-Math.PI/2,-Math.PI/2+h*Math.PI*2);ctx.stroke();ctx.lineWidth=1}}
     if(b===BH&&P.st==='charge'&&g.gid===P.relG){const h=Math.min(1,(now-P.chT0)/CFG.chf);ctx.strokeStyle=P.chFull?((frameNo>>2)&1?C.mint:'#fff'):C.lime;ctx.lineWidth=P.chFull?6:4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+10,-Math.PI/2,-Math.PI/2+h*Math.PI*2);ctx.stroke();ctx.lineWidth=1;
       otxt(P.chFull?'今！離す':'ため中',b.x,b.y-b.r-24,'800 12px '+UI,P.chFull?C.mint:C.lime)}
   }
@@ -931,20 +982,21 @@ function chkList(){
     L.push({k,st:SN[st],how,nm:MV[k].nm})}
   L.push({k:'throw',st:'立ち',how:'密着で左手を前＋ 弱タップ→強タップ（すばやく）',nm:MV.throw.nm});
   for(const c of CMDS)L.push({k:c.k,st:c.air?'ジャンプ':'コマンド',how:c.l,nm:MV[c.k].nm,cmd:1});
-  L.push({k:'sp_neko',st:'立ち',how:'強を1秒以上ホールド（ふちが金色）→ ←へフリック',nm:MV.sp_neko.nm,cmd:1});
+  L.push({k:'kaku',st:'立ち',how:'強を動かさず1秒以上ホールド（SP満タン）',nm:'覚醒モード',kaku:1});
+  L.push({k:'ichigeki',st:'覚醒中',how:'弱を動かさずホールド（ふちが光る）→ そのまま強も動かさずホールド',nm:'一撃必殺',ichi:1});
   return L}
 function chkStart(){CHK={list:chkList(),i:0,tries:0,t0:performance.now(),res:[],wait:0};reset();P.x=E.x-70}
 function chkCur(){return CHK&&CHK.i<CHK.list.length?CHK.list[CHK.i]:null}
 function chkTry(){if(chkCur()&&!CHK.wait)CHK.tries++}
 function chkDone(k){const c=chkCur();if(!c||CHK.wait)return;
   const hit=c.k===k||(c.k==='s_lp1'&&k.startsWith('s_lp'))||(c.k==='j_lp1'&&k.startsWith('j_lp'));
-  if(!hit){CHK.miss=(CHK.miss||{});(CHK.miss[c.k]=CHK.miss[c.k]||[]).push(MV[k].nm);return}
+  if(!hit){CHK.miss=(CHK.miss||{});(CHK.miss[c.k]=CHK.miss[c.k]||[]).push(MV[k]?MV[k].nm:k);return}
   CHK.res.push({k:c.k,nm:c.nm,how:c.how,tries:Math.max(1,CHK.tries),sec:+((performance.now()-CHK.t0)/1000).toFixed(1),miss:(CHK.miss&&CHK.miss[c.k])||[]});
   CHK.wait=50;bigText('OK',C.lime);SE.ready();if(c.cmd||c.k==='super')P.sp=100;
 }
 function chkTick(){if(!CHK||!CHK.wait)return;if(--CHK.wait===0){CHK.i++;CHK.tries=0;CHK.t0=performance.now();
-  const n=chkCur();if(n){if(n.k==='super'||n.cmd)P.sp=100;if(Math.abs(E.x-P.x)>120||P.x<XL+40){reset();P.x=E.x-70;if(n.k==='super')P.sp=100}}}}
-function chkSkip(){const c=chkCur();if(!c)return;CHK.res.push({k:c.k,nm:c.nm,how:c.how,tries:CHK.tries,sec:null,skip:1,miss:(CHK.miss&&CHK.miss[c.k])||[]});CHK.i++;CHK.tries=0;CHK.t0=performance.now();const n=chkCur();if(n&&(n.cmd||n.k==='super'))P.sp=100}
+  const n=chkCur();if(n){if(n.k==='super'||n.cmd||n.kaku)P.sp=100;if(n.kaku){P.kaku=0;P.kakuUsed=false}if(n.ichi&&!P.kaku){P.kaku=CFG.kakuSec*60;P.kakuUsed=true}if(Math.abs(E.x-P.x)>120||P.x<XL+40){reset();P.x=E.x-70;if(n.k==='super')P.sp=100}}}}
+function chkSkip(){const c=chkCur();if(!c)return;CHK.res.push({k:c.k,nm:c.nm,how:c.how,tries:CHK.tries,sec:null,skip:1,miss:(CHK.miss&&CHK.miss[c.k])||[]});CHK.i++;CHK.tries=0;CHK.t0=performance.now();const n=chkCur();if(n&&(n.cmd||n.k==='super'||n.kaku))P.sp=100;if(n&&n.kaku){P.kaku=0;P.kakuUsed=false}if(n&&n.ichi&&!P.kaku){P.kaku=CFG.kakuSec*60;P.kakuUsed=true}}
 function drawCheck(){
   if(!CHK)return;const L=CHK.list,i=CHK.i,x=10,w=Math.min(210,LW*0.27),y0=86,y1=LH-64;
   ctx.fillStyle='rgba(6,8,12,.72)';rr(x-4,y0,w,y1-y0,10);ctx.fill();
@@ -986,7 +1038,9 @@ const UIDEF=[
   {k:'flickT',l:'フリック：押してから離すまで',min:80,max:400,st:10,u:'ms',n:'これより長くかかった大きな動きは「遅い」で何も出ない（ホールドと分けるため）。'},
   {k:'hsHold',l:'ホールド：止める時間',min:80,max:500,st:10,u:'ms',n:'押して動かさずにこの時間たつと「ホールド」（ボタンのふちが光る）。そのあとスワイプで技。'},
   {k:'hsD',l:'ホールドのあとのスワイプ：距離',min:10,max:60,u:'px'},
-  {k:'lhHold',l:'ロングホールド（白猫の構え）',min:600,max:2000,st:50,u:'ms',n:'強をこの時間より長くホールドしてから ← で白猫の構え（虎雪 16:52）。短いと当て身返し。'},
+  {k:'lhHold',l:'覚醒：強ロングホールドの時間',min:600,max:2000,st:50,u:'ms',n:'強を動かさずにこの時間ホールドすると覚醒モード（虎雪 17:12）。'},
+  {k:'kakuSec',l:'覚醒：続く時間',min:4,max:20,u:'秒'},
+  {k:'kakuSP',l:'覚醒：使うSP',min:0,max:100,st:5,u:''},
   {k:'dtol',l:'向きのゆるさ',min:20,max:45,u:'°',n:'45°＝ずれても必ずどれかの向きになる。'},
   {k:'cmdGap',l:'コマンドの間',min:150,max:900,st:10,u:'ms',n:'1手と1手の間がこれより短いと、コマンド技になる（moveset ★0.35秒）。'},
   {k:'cmdBuf',l:'コマンドの先行入力',min:0,max:40,u:'F',n:'前の技が終わる何F前までに入れたコマンドを、終わったら出すか。'},
@@ -1021,7 +1075,7 @@ const UIDEF=[
 const HOW=`<div class="how">
 <b>横持ち・両手</b>。<b>左手（移動）</b>：左半分のどこでも触った所が中心。倒す＝歩く／上＝ジャンプ（斜めで前・後ろ）／下＝しゃがむ／後ろ＝ガード。前・後ろへすばやくはじく＝ダッシュ・バックステップ。<br>
 <b>右手：弱・強の2つのボタン</b>（虎雪 16:00 の形）<br>・<b>タップ</b>＝1技（弱は連打で3段）<br>・<b>フリック</b>＝押してすぐ上下左右にはじいて離す<br>・<b>ホールド→スワイプ</b>＝押して止め、ふちが光ったら上下左右へずらす（立ちだけ別の技。しゃがみ・ジャンプはフリックと同じ技）<br>
-<b>コンボコマンド</b>（1手の間 ${CFG.cmdGap/1000}秒以内。前の技の途中でも入れておける）：${CMDS.map(c=>MV[c.k].nm+'＝'+c.l).join('、')}<br><b>白猫の構え</b>：強を1秒以上ホールド（ふちが金色になる）→ ←へフリック。<br>
+<b>コンボコマンド</b>（1手の間 ${CFG.cmdGap/1000}秒以内。前の技の途中でも入れておける）：${CMDS.map(c=>MV[c.k].nm+'＝'+c.l).join('、')}<br><b>覚醒モード</b>：強を動かさずに1秒以上ホールド（SP満タン・1ラウンド1回）。10秒の間、威力 +15%、必殺技のSPがいらず、必殺技どうしを何回でもつなげる。<br><b>一撃必殺</b>：覚醒中に、弱を動かさずホールド（ふちが光る）→ そのまま強も動かさずホールド。当たれば相手は一撃で倒れる。<br><b>コマンドの途中の技</b>は、当たるのを待ってから次へつながる（当たってつながって、最後にコマンド技で締まる）。<br>
 <b>技チェック</b>：上の「技チェック」で、全部の技を順に出していく（左に一覧。出せたら次へ）。</div>
 <div class="tbl" id="howtbl"></div>`;
 function openOv(){buildOv();ov.hidden=false}
@@ -1031,7 +1085,7 @@ function buildOv(){
   h+='<h2>操作</h2>'+HOW;
   h+='<div class="seg"><button type="button" id="ovtask">'+(task?'お題をやめる':'お題を始める（'+TASKS.length+'つ×'+TN+'回）')+'</button></div>';
   h+='<h2>プリセット</h2>';
-  for(let i=1;i<=3;i++){const p=load('smf_pre11_'+i);h+=`<div class="seg"><button type="button" data-pl="${i}">${i}を読む${p?'':'（空）'}</button><button type="button" data-ps="${i}">${i}に保存</button></div>`}
+  for(let i=1;i<=3;i++){const p=load('smf_pre12_'+i);h+=`<div class="seg"><button type="button" data-pl="${i}">${i}を読む${p?'':'（空）'}</button><button type="button" data-ps="${i}">${i}に保存</button></div>`}
   for(const d of UIDEF){
     if(d.h){h+=`<h2>${d.h}</h2>`;continue}
     if(d.o){h+=`<div class="row"><div class="lab">${d.l}</div><div class="seg">`+d.o.map(([v,t])=>`<button type="button" data-k="${d.k}" data-v='${JSON.stringify(v)}' aria-pressed="${CFG[d.k]===v}">${t}</button>`).join('')+`</div>${d.n?`<div class="note">${d.n}</div>`:''}</div>`}
@@ -1050,7 +1104,7 @@ function buildOv(){
   if(CHK&&CHK.res.length){h+='<h2>技チェックの結果</h2><div class="tbl"><table><tr><th>技</th><th>しぐさの回数</th><th>秒</th><th>代わりに出た技</th></tr>';for(const r of CHK.res)h+=`<tr><td>${r.nm}</td><td>${r.skip?'とばした':r.tries}</td><td>${r.sec??'—'}</td><td>${r.miss.slice(0,3).join('、')}</td></tr>`;h+='</table></div>'}
   h+='<div class="seg"><button type="button" id="ovchk">'+(CHK?'技チェックをやめる':'技チェックを始める（全'+chkList().length+'技）')+'</button></div>';
   h+='<div class="seg"><button type="button" id="ovcopy">記録をコピー（QA用）</button><button type="button" id="ovclr">記録を消す</button></div><textarea id="ovtxt" readonly hidden></textarea>';
-  h+=`<div class="note">${VER}・YUKI のみ・右手は弱／強のフリックとホールド→スワイプ（虎雪 16:00）・白猫の構え＝強ロングホールド←（16:52）。設定はこの端末に覚えます。</div>`;
+  h+=`<div class="note">${VER}・YUKI のみ・右手は弱／強のフリックとホールド→スワイプ（虎雪 16:00）・覚醒と一撃必殺（17:12）。設定はこの端末に覚えます。</div>`;
   ovin.innerHTML=h;
   {const G=[['t','タップ'],['fF','フリック→'],['fB','フリック←'],['fU','フリック↑'],['fD','フリック↓'],['hF','ホールド→'],['hB','ホールド←'],['hU','ホールド↑'],['hD','ホールド↓']];
    let t='<table><tr><th>しぐさ</th><th>立ち 弱</th><th>立ち 強</th><th>しゃがみ 弱</th><th>しゃがみ 強</th><th>空中 弱</th><th>空中 強</th></tr>';
@@ -1061,8 +1115,8 @@ function buildOv(){
   ovin.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{CFG[b.dataset.k]=JSON.parse(b.dataset.v);saveCfg();
     ovin.querySelectorAll(`button[data-k="${b.dataset.k}"]`).forEach(x=>x.setAttribute('aria-pressed',x===b));if(['start','dummy'].includes(b.dataset.k))reset()});
   ovin.querySelectorAll('input[type=range]').forEach(r=>r.oninput=()=>{const k=r.dataset.k,d=UIDEF.find(x=>x.k===k);CFG[k]=+r.value;document.getElementById('v_'+k).textContent=r.value+d.u;saveCfg()});
-  ovin.querySelectorAll('button[data-ps]').forEach(b=>b.onclick=()=>{save('smf_pre11_'+b.dataset.ps,Object.assign({},CFG));b.textContent='保存しました';setTimeout(buildOv,600)});
-  ovin.querySelectorAll('button[data-pl]').forEach(b=>b.onclick=()=>{const p=load('smf_pre11_'+b.dataset.pl);if(!p)return;for(const k in DEF)if(k in p)CFG[k]=p[k];saveCfg();reset();buildOv()});
+  ovin.querySelectorAll('button[data-ps]').forEach(b=>b.onclick=()=>{save('smf_pre12_'+b.dataset.ps,Object.assign({},CFG));b.textContent='保存しました';setTimeout(buildOv,600)});
+  ovin.querySelectorAll('button[data-pl]').forEach(b=>b.onclick=()=>{const p=load('smf_pre12_'+b.dataset.pl);if(!p)return;for(const k in DEF)if(k in p)CFG[k]=p[k];saveCfg();reset();buildOv()});
   document.getElementById('ovchk').onclick=()=>{if(CHK){CHK=null;reset()}else chkStart();closeOv()};
   document.getElementById('ovtask').onclick=()=>{task=task?null:(startTask(),task);reset();closeOv()};
   document.getElementById('ovdef').onclick=()=>{for(const d of UIDEF)if(d.min!==undefined)CFG[d.k]=DEF[d.k];saveCfg();buildOv()};
