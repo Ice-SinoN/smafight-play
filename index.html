@@ -71,7 +71,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v1.3';
+const VER='v1.4';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -185,10 +185,66 @@ const MV={
   super:{nm:'白猫の護り',cmd:1,su:6,ac:36,rc:24,dmg:40,rx:70,hits:[2,7,12,17,22,27,32],inv:70,auto:1,stop:10,fin:1,sk:1,sup:1,pz:['counter','rush','straight']},
 };
 // 技のコマ（グラフィック班 v08_motion の絵を、moveset v2 の技に割り当てた。専用の絵がまだの技は近い絵を使う＝★印）
+// ================= RIN の技（smafight-rin-moveset.md v1・ゲームデザイン班 22:35）=================
+// 矢の技は pj（矢の中身）を持つ。H＝100単位なので 0.050H/F＝5。絵は RIN の絵がまだないので YUKI のコマを仮に使う（anim）
+const PJ=(o)=>Object.assign({k:'line',spd:5,str:1,dmg:40,stun:16,h:7},o);
+Object.assign(MV,{
+  r_s_lp1:{nm:'弓打ち',su:5,ac:2,rc:9,dmg:25,rx:45,stun:14,stop:2,nx:'r_s_lp2',nrm:1,rk:1,step:10,anim:'s_lp1',ch:'RIN'},
+  r_s_lp2:{nm:'回し打ち',su:6,ac:2,rc:11,dmg:25,rx:45,stun:14,stop:2,nx:'r_s_lp3',nrm:1,rk:1,step:6,anim:'s_lp2',ch:'RIN'},
+  r_s_lp3:{nm:'前蹴り',su:8,ac:3,rc:18,dmg:40,rx:55,stun:18,stop:3,kb:4,nrm:1,rk:1,anim:'s_lp3',ch:'RIN'},
+  r_s_lp_f:{nm:'速い矢',su:10,ac:1,rc:18,rx:-99,nrm:1,rk:1,pj:PJ({dmg:40,stun:16,c1:1}),anim:'s_hp',ch:'RIN'},
+  r_s_lp_b:{nm:'下がり射ち',su:12,ac:1,rc:16,rx:-99,mvx:-30,nrm:1,rk:1,pj:PJ({dmg:35,stun:16,c1:1}),anim:'s_lp_b',ch:'RIN'},
+  r_s_lp_u:{nm:'上への矢',su:9,ac:1,rc:16,rx:-99,nrm:1,rk:1,pj:PJ({dmg:35,ang:45,c1:1}),anim:'s_lp_u',ch:'RIN'},
+  r_s_lp_d:{nm:'足元の矢',su:10,ac:1,rc:18,rx:-99,nrm:1,rk:1,pj:PJ({k:'ground',dmg:30,stun:14,low:1}),anim:'s_lp_d',ch:'RIN'},
+  r_s_lh_f:{nm:'駒置き',su:14,ac:1,rc:16,rx:-99,nrm:1,rk:1,pj:PJ({k:'piece',x0:120,life:120,dmg:50,stun:16,str:9,h:40}),anim:'s_lh_f',ch:'RIN'},
+  r_s_lh_b:{nm:'押し返し',su:6,ac:3,rc:16,dmg:30,rx:50,stun:12,kb:8,pushG:1,stop:3,nrm:1,rk:1,anim:'s_lh_d',ch:'RIN'},
+  r_s_lh_u:{nm:'山なりの矢',su:12,ac:1,rc:18,rx:-99,nrm:1,rk:1,pj:PJ({k:'arc',vx:3.6,vy:-7,g:0.3,dmg:45}),anim:'s_lh_u',ch:'RIN'},
+  r_s_lh_d:{nm:'足払い',su:7,ac:3,rc:14,dmg:35,rx:55,low:1,stun:16,stop:3,nrm:1,rk:1,anim:'s_lh_d',ch:'RIN'},
+  r_s_hp:{nm:'弓の薙ぎ払い',su:11,ac:4,rc:20,dmg:80,rx:60,stun:24,kb:1.2,stop:4,nrm:1,rk:2,anim:'s_hp',ch:'RIN'},
+  r_s_hp_f:{nm:'重い矢',su:14,ac:1,rc:26,rx:-99,nrm:1,rk:2,pj:PJ({spd:3,str:2,dmg:70,stun:20,c1:1,h:9}),anim:'s_hp_f',ch:'RIN'},
+  r_s_hp_b:{nm:'後ろ蹴り',su:12,ac:4,rc:22,dmg:85,rx:55,kb:2,ckb:5,stun:26,stop:4,nrm:1,rk:2,anim:'s_hp_b',ch:'RIN'},
+  r_s_hp_u:{nm:'跳ね上げの矢',su:8,ac:1,rc:24,rx:-99,inv:4,nrm:1,rk:2,pj:PJ({spd:7,ang:60,dmg:90,launch:1,stop:6}),anim:'s_hp_u',ch:'RIN'},
+  r_s_hp_d:{nm:'縫い止めの矢',su:13,ac:1,rc:24,rx:-99,nrm:1,rk:2,pj:PJ({k:'ground',dmg:50,stun:16,low:1,pin:60}),anim:'s_hp_d',ch:'RIN'},
+  r_s_hh_f:{nm:'ため矢',su:8,ac:1,rc:24,rx:-99,nrm:1,rk:2,rel:'charge',charge:1,pj:PJ({spd:4,str:2,dmg:100,stun:20,chg:1,h:10}),anim:'s_hh_f',ch:'RIN'},
+  r_s_hh_b:{nm:'見切り',su:2,ac:10,rc:24,dmg:110,parry:1,pwin:10,plaunch:1,stop:12,nrm:1,rk:2,anim:'s_hh_b',ch:'RIN'},
+  r_s_hh_u:{nm:'矢の柱',su:10,ac:12,rc:12,dmg:50,rx:60,ry:90,hits:[1,7],rise:0,launch:1,hop:0,stop:4,nrm:1,rk:2,anim:'s_hh_u',ch:'RIN'},
+  r_s_hh_d:{nm:'駒の罠',su:16,ac:1,rc:18,rx:-99,nrm:1,rk:2,pj:PJ({k:'piece',trap:1,x0:40,life:180,dmg:60,launch:1,str:9,h:14,y0:-8}),anim:'s_hh_d',ch:'RIN'},
+  r_c_lp:{nm:'しゃがみ弓打ち',su:5,ac:2,rc:9,dmg:25,rx:46,stun:14,stop:2,nrm:1,rk:1,nx:'r_c_lp',anim:'c_lp',ch:'RIN'},
+  r_c_lp_f:{nm:'しゃがみ射ち',su:10,ac:1,rc:18,rx:-99,nrm:1,rk:1,pj:PJ({dmg:35,y0:-34,c1:1}),anim:'c_lp_f',ch:'RIN'},
+  r_c_lp_b:{nm:'転がり下がり',su:14,ac:0,rc:6,rx:-99,dmg:0,mvx:-60,inv:8,nrm:1,rk:1,anim:'c_lp_b',ch:'RIN'},
+  r_c_lp_u:{nm:'しゃがみ対空',su:6,ac:1,rc:14,rx:-99,nrm:1,rk:1,pj:PJ({ang:55,dmg:35,life:30,y0:-50}),anim:'c_lp_u',ch:'RIN'},
+  r_c_lp_d:{nm:'足元払い',su:5,ac:2,rc:10,dmg:25,rx:50,low:1,stun:14,stop:2,nrm:1,rk:1,nx:'r_c_lp_d',anim:'c_lp_d',ch:'RIN'},
+  r_c_hp:{nm:'しゃがみ薙ぎ',su:10,ac:4,rc:20,dmg:75,rx:55,ry:80,aa:1,pop:3,stop:4,nrm:1,rk:2,anim:'c_hp',ch:'RIN'},
+  r_c_hp_f:{nm:'地をはう重い矢',su:14,ac:1,rc:26,rx:-99,nrm:1,rk:2,pj:PJ({k:'ground',spd:3,str:2,dmg:65,stun:20,low:1,h:9}),anim:'c_hp_f',ch:'RIN'},
+  r_c_hp_b:{nm:'回転蹴り',su:11,ac:4,rc:22,dmg:80,rx:55,mvx:-10,low:1,kd:1,pop:2.5,stop:4,nrm:1,rk:2,anim:'c_hp_b',ch:'RIN'},
+  r_c_hp_u:{nm:'真上の矢',su:5,ac:1,rc:30,rx:-99,inv:5,nrm:1,rk:2,pj:PJ({vx:1.6,vy:-8,k:'line',dmg:100,launch:1,life:40,y0:-60,x0:20,h:12,stop:6}),anim:'c_hp_u',ch:'RIN'},
+  r_c_hp_d:{nm:'突き刺し',su:12,ac:3,rc:18,dmg:55,rx:50,otg:1,stop:4,nrm:1,rk:2,anim:'c_hp_d',ch:'RIN'},
+  r_j_lp1:{nm:'空中弓打ち',su:5,ac:3,rc:8,dmg:20,rx:46,ry:48,air:1,nrm:1,rk:1,nx:'r_j_lp2',stun:24,stop:2,anim:'j_lp1',ch:'RIN'},
+  r_j_lp2:{nm:'空中回し打ち',su:6,ac:3,rc:8,dmg:20,rx:46,ry:48,air:1,nrm:1,rk:1,nx:'r_j_lp3',stun:24,stop:2,anim:'j_lp2',ch:'RIN'},
+  r_j_lp3:{nm:'空中蹴り',su:8,ac:4,rc:10,dmg:35,rx:50,ry:50,air:1,nrm:1,rk:1,lift:-2.6,stun:28,stop:3,anim:'j_lp3',ch:'RIN'},
+  r_j_lp_f:{nm:'空中の矢',su:8,ac:1,rc:9,rx:-99,air:1,nrm:1,rk:1,pj:PJ({ang:-30,dmg:35}),anim:'j_lp_f',ch:'RIN'},
+  r_j_lp_b:{nm:'空中下がり射ち',su:9,ac:1,rc:9,rx:-99,air:1,back:1.5,nrm:1,rk:1,pj:PJ({dmg:30}),anim:'j_lp_b',ch:'RIN'},
+  r_j_lp_u:{nm:'空中の上への矢',su:6,ac:1,rc:9,rx:-99,air:1,nrm:1,rk:1,pj:PJ({ang:45,dmg:30,c1:1}),anim:'j_lp_u',ch:'RIN'},
+  r_j_lp_d:{nm:'真下の矢',su:8,ac:1,rc:9,rx:-99,air:1,nrm:1,rk:1,pj:PJ({vx:0.6,vy:6,dmg:30}),anim:'j_lp_d',ch:'RIN'},
+  r_j_hp:{nm:'空中回し蹴り',su:9,ac:4,rc:12,dmg:65,rx:56,ry:55,air:1,nrm:1,rk:2,kb:1,lift:-2.4,stop:4,anim:'j_hp',ch:'RIN'},
+  r_j_hp_f:{nm:'空中の重い矢',su:12,ac:1,rc:12,rx:-99,air:1,nrm:1,rk:2,pj:PJ({ang:-30,spd:4,str:2,dmg:65,stun:20,h:9}),anim:'j_hp_f',ch:'RIN'},
+  r_j_hp_b:{nm:'空中後ろ蹴り',su:7,ac:6,rc:8,dmg:55,rx:42,ry:48,air:1,back:2.2,stun:24,stop:4,nrm:1,rk:2,anim:'j_hp_b',ch:'RIN'},
+  r_j_hp_u:{nm:'空中の跳ね上げ',su:8,ac:6,rc:12,dmg:75,rx:42,ry:70,air:1,lift:-6.5,once:'relaunch',stop:5,nrm:1,rk:2,anim:'j_hp_u',ch:'RIN'},
+  r_j_hp_d:{nm:'矢の雨（叩きつけ）',su:9,ac:1,rc:14,rx:-99,air:1,nrm:1,rk:2,pj:[PJ({vx:1.2,vy:7,dmg:80,slam:1,x0:20,h:10}),PJ({vx:1.2,vy:7,dmg:80,slam:1,x0:45,wait:3,h:10}),PJ({vx:1.2,vy:7,dmg:80,slam:1,x0:70,wait:6,h:10})],anim:'j_hp_d',ch:'RIN'},
+  r_throw:{nm:'弓がらみ',su:5,ac:2,rc:22,dmg:100,rx:40,thr:1,stop:8,anim:'throw',ch:'RIN'},
+  r_chase:{nm:'追い矢',su:6,ac:1,rc:10,rx:-99,nrm:1,rk:1,pj:PJ({k:'homing',spd:10,dmg:25,stun:22,lift:-3,air:1}),anim:'j_lp_u',ch:'RIN'},
+  r_sp_sanren:{nm:'三連の矢',cmd:1,su:8,ac:1,rc:20,rx:-99,sp:15,sk:1,pj:[PJ({spd:10,dmg:40,stun:22}),PJ({spd:10,dmg:40,stun:22,wait:6,fin:1})],anim:'sp_hakusen',ch:'RIN'},
+  r_sp_nobori:{nm:'昇り矢',cmd:1,su:8,ac:1,rc:24,rx:-99,sp:15,sk:1,pj:PJ({k:'pillar',dmg:110,launch:1.3,life:12,h:60,stop:6}),anim:'sp_sekka',ch:'RIN'},
+  r_sp_ame:{nm:'矢の雨',cmd:1,su:10,ac:1,rc:22,rx:-99,sp:15,sk:1,both:1,pj:[0,1,2,3,4].map(i=>PJ({k:'rain',dmg:20,stun:18,wait:10+i*4,xo:(i-2)*16,h:9})),anim:'sp_yukiwari',ch:'RIN'},
+  r_sp_sandan:{nm:'下がり三段射ち',cmd:1,su:6,ac:1,rc:24,rx:-99,mvx:-80,sp:15,sk:1,pj:[0,1,2].map(i=>PJ({spd:7,dmg:30,stun:18,wait:i*5})),anim:'sp_hyosho',ch:'RIN'},
+  r_sp_check:{nm:'チェックメイト',cmd:1,su:8,ac:1,rc:24,rx:-99,sp:15,sk:1,pj:PJ({spd:10,dmg:80,stun:24,pin:90,pinJ:90,gold:1,h:8}),anim:'sp_neko',ch:'RIN'},
+  r_super:{nm:'クイーンズ・オーダー',cmd:1,su:8,ac:1,rc:30,rx:-99,inv:16,sup:1,sk:1,pj:[0,1,2,3,4,5,6].map(i=>PJ({spd:10,dmg:40,stun:24,wait:i*4,gold:1,multi:i<6,fin:i===6,yo:(i%3-1)*12,h:10})),anim:'super',ch:'RIN'},
+  r_ichigeki:{nm:'一撃必殺・チェックメイト・アロー',cmd:1,su:40,ac:1,rc:60,rx:-99,ichi:1,pj:PJ({spd:6,str:3,ichi:1,h:18,y0:-80,gold:1,big:1}),anim:'ichigeki',ch:'RIN'},
+});
 const POSES={"awaken": ["awaken_1", "awaken_1b", "awaken_2", "awaken_2b", "awaken_3"], "burst": ["burst_1", "burst_1b", "burst_2"], "c_hp": ["c_hp_1", "c_hp_1b", "c_hp_2", "c_hp_2b", "c_hp_3"], "c_hp_b": ["c_hp_b_1", "c_hp_b_1b", "c_hp_b_2", "c_hp_b_2b", "c_hp_b_3"], "c_hp_d": ["c_hp_d_1", "c_hp_d_1b", "c_hp_d_2", "c_hp_d_2b", "c_hp_d_3"], "c_hp_f": ["c_hp_f_1", "c_hp_f_1b", "c_hp_f_2", "c_hp_f_2b", "c_hp_f_3"], "c_hp_u": ["c_hp_u_1", "c_hp_u_1b", "c_hp_u_2", "c_hp_u_2b", "c_hp_u_3"], "c_lp": ["c_lp_1", "c_lp_1b", "c_lp_2", "c_lp_2b", "c_lp_3"], "c_lp_b": ["c_lp_b_1", "c_lp_b_1b", "c_lp_b_2", "c_lp_b_2b", "c_lp_b_3"], "c_lp_d": ["c_lp_d_1", "c_lp_d_1b", "c_lp_d_2", "c_lp_d_2b", "c_lp_d_3"], "c_lp_f": ["c_lp_f_1", "c_lp_f_1b", "c_lp_f_2", "c_lp_f_2b", "c_lp_f_3"], "c_lp_u": ["c_lp_u_1", "c_lp_u_1b", "c_lp_u_2", "c_lp_u_2b", "c_lp_u_3"], "ikkatsu": ["ikkatsu_1", "ikkatsu_1b", "ikkatsu_2", "ikkatsu_2b", "ikkatsu_3", "ikkatsu_4", "ikkatsu_5"], "j_hp": ["j_hp_1", "j_hp_2", "j_hp_2b", "j_hp_3"], "j_hp_b": ["j_hp_b_1", "j_hp_b_2", "j_hp_b_2b", "j_hp_b_3"], "j_hp_d": ["j_hp_d_1", "j_hp_d_2", "j_hp_d_2b", "j_hp_d_3"], "j_hp_f": ["j_hp_f_1", "j_hp_f_2", "j_hp_f_2b", "j_hp_f_3"], "j_hp_u": ["j_hp_u_1", "j_hp_u_2", "j_hp_u_2b", "j_hp_u_3"], "j_lp1": ["j_lp1_1", "j_lp1_2", "j_lp1_2b", "j_lp1_3"], "j_lp2": ["j_lp2_1", "j_lp2_2", "j_lp2_2b", "j_lp2_3"], "j_lp3": ["j_lp3_1", "j_lp3_2", "j_lp3_2b", "j_lp3_3"], "j_lp_b": ["j_lp_b_1", "j_lp_b_2", "j_lp_b_2b", "j_lp_b_3"], "j_lp_d": ["j_lp_d_1", "j_lp_d_2", "j_lp_d_2b", "j_lp_d_3"], "j_lp_f": ["j_lp_f_1", "j_lp_f_2", "j_lp_f_2b", "j_lp_f_3"], "j_lp_u": ["j_lp_u_1", "j_lp_u_2", "j_lp_u_2b", "j_lp_u_3"], "lose": ["lose_1", "lose_1b", "lose_2"], "s_hh_b": ["s_hh_b_1", "s_hh_b_1b", "s_hh_b_2", "s_hh_b_2b", "s_hh_b_3"], "s_hh_d": ["s_hh_d_1", "s_hh_d_1b", "s_hh_d_2", "s_hh_d_2b", "s_hh_d_3"], "s_hh_f": ["s_hh_f_1", "s_hh_f_1b", "s_hh_f_2", "s_hh_f_2b", "s_hh_f_3"], "s_hh_u": ["s_hh_u_1", "s_hh_u_1b", "s_hh_u_2", "s_hh_u_2b", "s_hh_u_3"], "s_hp": ["s_hp_1", "s_hp_1b", "s_hp_2", "s_hp_2b", "s_hp_3"], "s_hp_b": ["s_hp_b_1", "s_hp_b_1b", "s_hp_b_2", "s_hp_b_2b", "s_hp_b_3"], "s_hp_d": ["s_hp_d_1", "s_hp_d_1b", "s_hp_d_2", "s_hp_d_2b", "s_hp_d_3"], "s_hp_f": ["s_hp_f_1", "s_hp_f_1b", "s_hp_f_2", "s_hp_f_2b", "s_hp_f_3"], "s_hp_u": ["s_hp_u_1", "s_hp_u_1b", "s_hp_u_2", "s_hp_u_2b", "s_hp_u_3"], "s_lh_b": ["s_lh_b_1", "s_lh_b_1b", "s_lh_b_2", "s_lh_b_2b", "s_lh_b_3"], "s_lh_d": ["s_lh_d_1", "s_lh_d_1b", "s_lh_d_2", "s_lh_d_2b", "s_lh_d_3"], "s_lh_f": ["s_lh_f_1", "s_lh_f_1b", "s_lh_f_2", "s_lh_f_2b", "s_lh_f_3"], "s_lh_u": ["s_lh_u_1", "s_lh_u_1b", "s_lh_u_2", "s_lh_u_2b", "s_lh_u_3"], "s_lp1": ["s_lp1_1", "s_lp1_1b", "s_lp1_2", "s_lp1_2b", "s_lp1_3"], "s_lp2": ["s_lp2_1", "s_lp2_1b", "s_lp2_2", "s_lp2_2b", "s_lp2_3"], "s_lp3": ["s_lp3_1", "s_lp3_1b", "s_lp3_2", "s_lp3_2b", "s_lp3_3"], "s_lp_b": ["s_lp_b_1", "s_lp_b_1b", "s_lp_b_2", "s_lp_b_2b", "s_lp_b_3"], "s_lp_d": ["s_lp_d_1", "s_lp_d_1b", "s_lp_d_2", "s_lp_d_2b", "s_lp_d_3"], "s_lp_f": ["s_lp_f_1", "s_lp_f_1b", "s_lp_f_2", "s_lp_f_2b", "s_lp_f_3"], "s_lp_u": ["s_lp_u_1", "s_lp_u_1b", "s_lp_u_2", "s_lp_u_2b", "s_lp_u_3"], "sp_hakusen": ["sp_hakusen_1", "sp_hakusen_1b", "sp_hakusen_2", "sp_hakusen_2b", "sp_hakusen_3"], "sp_hyosho": ["sp_hyosho_1", "sp_hyosho_1b", "sp_hyosho_2", "sp_hyosho_2b", "sp_hyosho_3"], "sp_neko": ["sp_neko_1", "sp_neko_1b", "sp_neko_2", "sp_neko_2b", "sp_neko_3", "sp_neko_4"], "sp_sekka": ["sp_sekka_1", "sp_sekka_1b", "sp_sekka_2", "sp_sekka_2b", "sp_sekka_3"], "sp_yukiwari": ["sp_yukiwari_1", "sp_yukiwari_2", "sp_yukiwari_2b", "sp_yukiwari_3"], "stagger": ["stagger_1", "stagger_1b", "stagger_2"], "super": ["super_1", "super_1b", "super_2", "super_2b", "super_3", "super_4", "super_5", "super_6"], "throw": ["throw_1", "throw_1b", "throw_2", "throw_2b", "throw_3"], "walk_f": ["walk_f_01", "walk_f_02", "walk_f_03", "walk_f_04", "walk_f_05", "walk_f_06"], "walk_b": ["walk_b_01", "walk_b_02", "walk_b_03", "walk_b_04", "walk_b_05", "walk_b_06"], "idle": ["idle_01", "idle_02", "idle_03", "idle_04", "idle_05", "idle_06", "idle_07", "idle_08", "idle_09", "idle_10", "idle_11", "idle_12"]},JT={"jump_n": {"takeoff": "jump_n_1", "air": [[0.0, "jump_n_2"], [0.15, "jump_n_2b"], [0.32, "jump_n_3b"], [0.45, "jump_n_3"], [0.6, "jump_n_4"], [0.8, "jump_n_4b"]], "land": "jump_n_5"}, "jump_f": {"takeoff": "jump_f_1", "air": [[0.0, "jump_f_2"], [0.14, "jump_f_2b"], [0.28, "jump_f_2c"], [0.4, "jump_f_3"], [0.52, "jump_f_3b"], [0.64, "jump_f_4"], [0.82, "jump_f_4b"]], "land": "jump_f_5"}, "jump_b": {"takeoff": "jump_b_1", "air": [[0.0, "jump_b_2"], [0.18, "jump_b_2b"], [0.4, "jump_b_3"], [0.62, "jump_b_4"], [0.82, "jump_b_4b"]], "land": "jump_b_5"}};   // グラフィック班 v1.0（smafight_chr_YUKI_v10_motion.json）の poses / jump_timing
 // コマの割り振り：_1・_1b＝出始め（_1b は最後の1/3）／_2・_2b＝当たり（_2b は後半）／_3 以降＝戻り。_4 以降がある技（超必殺・一撃・白猫）は最後の1枚だけ戻り、ほかは当たりに入れる
 const SEQ={};
-for(const k in MV){const pk=k==='ichigeki'?'ikkatsu':k,fs=POSES[pk];if(!fs)continue;const su=[],ac=[],rc=[],many=fs.length>5;
+for(const k in MV){if(MV[k].anim)continue;const pk=k==='ichigeki'?'ikkatsu':k,fs=POSES[pk];if(!fs)continue;const su=[],ac=[],rc=[],many=fs.length>5;
   for(const f of fs){const t=f.slice(pk.length+1);if(t==='1'||t==='1b')su.push(f);else if(t==='2'||t==='2b')ac.push(f);else if(many&&f!==fs[fs.length-1])ac.push(f);else rc.push(f)}
   SEQ[k]=[su.length?su:[fs[0]],ac.length?ac:[fs[0]],rc.length?rc:[ac[ac.length-1]||fs[0]]]}
 SEQ.sp_neko=[['sp_neko_1','sp_neko_1b'],['sp_neko_2','sp_neko_2b'],['sp_neko_1b','sp_neko_1']];   // 構えて待つ。返し（_3・_4）は MOTION.cnt
@@ -196,7 +252,7 @@ function dist(fs,n,ph){n=Math.max(1,n);if(fs.length>n)fs=ph===0?fs.slice(fs.leng
   if(fs.length===1)return [[fs[0],n]];
   if(fs.length===2){const b=ph===0?Math.max(1,Math.round(n/3)):Math.floor(n/2);return [[fs[0],n-b],[fs[1],b]]}
   const e=Math.floor(n/fs.length);return fs.map((f,j)=>[f,j===fs.length-1?n-e*(fs.length-1):e])}
-for(const k in MV){const m=MV[k];m.key=k;const pz=m.pz||['guard','jab','idle'],sq=SEQ[k];
+for(const k in MV){const m=MV[k];m.key=k;const pz=m.pz||['guard','jab','idle'],sq=SEQ[k]||SEQ[m.anim];
   if(!sq){MOTION[k]=[[k+'_1',m.su,pz[0]],[k+'_2',m.ac,pz[1]],[k+'_3',m.rc||1,pz[2]]];continue}
   const out=[];[[0,m.su],[1,m.ac],[2,m.rc||1]].forEach(([i,n])=>dist(sq[i],n,i).forEach(([f,d])=>out.push([f,d,pz[i]])));
   MOTION[k]=out}
@@ -206,15 +262,21 @@ const tot=m=>m.su+m.ac+m.rc;
 const DIRK={F:'→',U:'↑',D:'↓',B:'←'};
 const BNM={L:'弱',H:'強'};
 // 右手の割り当て（moveset v2）。t＝タップ、f＝フリック（はじく）、h＝ホールドしてからスワイプ。しゃがみ・ジャンプの h は同じ向きの f と同じ（1-1 ★A）
-const GRID={
+const GRID_Y={
   stand:{L:{t:'s_lp1',fF:'s_lp_f',fB:'s_lp_b',fU:'s_lp_u',fD:'s_lp_d',hF:'s_lh_f',hB:'s_lh_b',hU:'s_lh_u',hD:'s_lh_d'},
          H:{t:'s_hp',fF:'s_hp_f',fB:'s_hp_b',fU:'s_hp_u',fD:'s_hp_d',hF:'s_hh_f',hB:'s_hh_b',hU:'s_hh_u',hD:'s_hh_d'}},
   crouch:{L:{t:'c_lp',fF:'c_lp_f',fB:'c_lp_b',fU:'c_lp_u',fD:'c_lp_d'},H:{t:'c_hp',fF:'c_hp_f',fB:'c_hp_b',fU:'c_hp_u',fD:'c_hp_d'}},
   air:{L:{t:'j_lp1',fF:'j_lp_f',fB:'j_lp_b',fU:'j_lp_u',fD:'j_lp_d'},H:{t:'j_hp',fF:'j_hp_f',fB:'j_hp_b',fU:'j_hp_u',fD:'j_hp_d'}},
 };
-for(const st of ['crouch','air'])for(const b of ['L','H'])for(const d of 'FBUD')GRID[st][b]['h'+d]=GRID[st][b]['f'+d];
+const GRID_R={
+  stand:{L:{t:'r_s_lp1',fF:'r_s_lp_f',fB:'r_s_lp_b',fU:'r_s_lp_u',fD:'r_s_lp_d',hF:'r_s_lh_f',hB:'r_s_lh_b',hU:'r_s_lh_u',hD:'r_s_lh_d'},
+         H:{t:'r_s_hp',fF:'r_s_hp_f',fB:'r_s_hp_b',fU:'r_s_hp_u',fD:'r_s_hp_d',hF:'r_s_hh_f',hB:'r_s_hh_b',hU:'r_s_hh_u',hD:'r_s_hh_d'}},
+  crouch:{L:{t:'r_c_lp',fF:'r_c_lp_f',fB:'r_c_lp_b',fU:'r_c_lp_u',fD:'r_c_lp_d'},H:{t:'r_c_hp',fF:'r_c_hp_f',fB:'r_c_hp_b',fU:'r_c_hp_u',fD:'r_c_hp_d'}},
+  air:{L:{t:'r_j_lp1',fF:'r_j_lp_f',fB:'r_j_lp_b',fU:'r_j_lp_u',fD:'r_j_lp_d'},H:{t:'r_j_hp',fF:'r_j_hp_f',fB:'r_j_hp_b',fU:'r_j_hp_u',fD:'r_j_hp_d'}}};
+for(const G of [GRID_Y,GRID_R])for(const st of ['crouch','air'])for(const b of ['L','H'])for(const d of 'FBUD')G[st][b]['h'+d]=G[st][b]['f'+d];
+let GRID=GRID_Y;
 // コンボコマンド（moveset v2 2-4）。L/H＝弱・強、*＝どちらでも。t＝タップ、fF＝前フリック、hB＝ホールドから後ろスワイプ
-const CMDS=[   // control-brief v8.4 3-3・moveset v5 2-4（ボタンは問わない。最後の手が【強】なら強い版）
+const CMDS_Y=[   // control-brief v8.4 3-3・moveset v5 2-4（ボタンは問わない。最後の手が【強】なら強い版）
   {k:'super',seq:['*fF','*fB','*hF'],l:'SP満タンで はじく→ → はじく← → ホールド→スワイプ→'},
   {k:'sp_hakusen',seq:['*fF','*hF'],l:'はじく→ → ホールド→スワイプ→'},
   {k:'sp_hyosho',seq:['*fF','*hD'],l:'はじく→ → ホールド→スワイプ↓'},
@@ -223,7 +285,17 @@ const CMDS=[   // control-brief v8.4 3-3・moveset v5 2-4（ボタンは問わ�
   {k:'sp_neko',seq:['*fD','*fB'],alt:1,l:'（設定：はじく↓ → はじく← でも出す）'},
   {k:'sp_yukiwari',seq:['*fU','*hD'],air:1,l:'空中で はじく↑ → ホールド→スワイプ↓'},
 ];
-const cmdOn=c=>!(c.alt&&!CFG.nekoAlt)&&!(c.k==='super'&&P.sp<100&&!spFull());
+const CMDS_R=[   // RIN（rin-moveset 2-4）
+  {k:'r_super',seq:['*fF','*fB','*hF'],l:'SP満タンで はじく→ → はじく← → ホールド→スワイプ→'},
+  {k:'r_sp_sanren',seq:['*fF','*hF'],l:'はじく→ → ホールド→スワイプ→'},
+  {k:'r_sp_check',seq:['*fF','*hD'],l:'はじく→ → ホールド→スワイプ↓'},
+  {k:'r_sp_nobori',seq:['*fD','*hU'],l:'はじく↓ → ホールド→スワイプ↑'},
+  {k:'r_sp_ame',seq:['*fU','*hD'],both:1,l:'はじく↑ → ホールド→スワイプ↓（空中でも）'},
+  {k:'r_sp_sandan',seq:['*fB','*hF'],l:'はじく← → ホールド→スワイプ→'},
+];
+let CMDS=CMDS_Y;
+function setChar(ch){GRID=ch==='RIN'?GRID_R:GRID_Y;CMDS=ch==='RIN'?CMDS_R:CMDS_Y}
+const cmdOn=c=>!(c.alt&&!CFG.nekoAlt)&&!(MV[c.k].sup&&P.sp<100&&!spFull()&&!P.kaku);
 function cmdNext(at){ // コマンドの途中なら、次に来るべき手（B-003：2手目の受けやすさ）
   const out=[];if(!CMDH.length||at-CMDH[CMDH.length-1].t>CFG.cmdGap)return out;
   for(const c of CMDS){if(!cmdOn(c))continue;const n=c.seq.length;
@@ -392,8 +464,8 @@ const sUp=s=>s>=1&&s<=3,sDown=s=>s>=5&&s<=7,sFwd=s=>s===0||s===1||s===7,sBack=s=
 // ================= 1対1（v1.3）：2人を同じしくみで動かす =================
 // どちらの人も「自分は左・相手は右」の向きで考える（右の人は左右を反転して動かす）。rules 1章「自分は常に左、相手は右。すれ違いなし」
 let MODE='practice',F=[null,null],CUR=0,MIRC=false,MATCH=null,REC=null;
-const VSCFG={lv:2,me:'YUKI',op:'YUKI'},VS_T=45*60;
-function newFighter(side){return {side,x:0,y:0,vx:0,vy:0,st:'idle',t:0,mv:null,hit:false,sinceHit:99,canc:0,airDash:false,inv:0,queued:null,qT:0,sp:50,hp:1000,stun:0,burstUsed:false,chT0:0,chFull:false,just:false,air:{chain:0},jdir:0,relKey:null,relG:0,once:{},kaku:0,kakuUsed:false,cmdPath:false,
+const VSCFG={lv:2,me:'YUKI',op:'RIN'},VS_T=45*60;
+function newFighter(side,ch){return {side,ch:ch||'YUKI',pin:0,pinJ:0,x:0,y:0,vx:0,vy:0,st:'idle',t:0,mv:null,hit:false,sinceHit:99,canc:0,airDash:false,inv:0,queued:null,qT:0,sp:50,hp:1000,stun:0,burstUsed:false,chT0:0,chFull:false,just:false,air:{chain:0},jdir:0,relKey:null,relG:0,once:{},kaku:0,kakuUsed:false,cmdPath:false,
   airT:0,bounced:false,slam:false,wallUsed:false,ko:0,vict:false,cpu:side===1,ctl:{stick:{x:0,y:0,s:-1}},ai:null,ichiUsed:0,
   ctx:{combo:0,comboDmg:0,comboSup:false,comboBounce:false,comboFin:false,comboShow:0,lastCombo:null,endSoon:0,CMDH:[],NT:[],SPH:[]}}}
 function loadCtx(c){combo=c.combo;comboDmg=c.comboDmg;comboSup=c.comboSup;comboBounce=c.comboBounce;comboFin=c.comboFin;comboShow=c.comboShow;lastCombo=c.lastCombo;endSoon=c.endSoon;CMDH.splice(0,CMDH.length,...c.CMDH);NT.splice(0,NT.length,...c.NT);SPH.splice(0,SPH.length,...c.SPH)}
@@ -405,8 +477,8 @@ function mirNew(){if(!REC)return;
   for(let i=REC.d;i<dusts.length;i++){dusts[i].x=STW-dusts[i].x;dusts[i].vx=-dusts[i].vx}
   for(let i=REC.g;i<ghosts.length;i++){ghosts[i].x=STW-ghosts[i].x;ghosts[i].flip=!ghosts[i].flip}
   for(let i=REC.p;i<pops.length;i++)pops[i].wx=STW-pops[i].wx;REC=null}
-function swapTo(s){saveCtx(F[0].ctx);CUR=s;P=F[s];E=F[1-s];if(s===1){MIRC=true;mirF(F[0]);mirF(F[1]);REC={f:FXS.length,r:rings.length,s:sparks.length,d:dusts.length,g:ghosts.length,p:pops.length}}loadCtx(F[s].ctx)}
-function swapBack(){const s=CUR;saveCtx(F[s].ctx);if(s===1){mirF(F[0]);mirF(F[1]);mirNew();MIRC=false}CUR=0;P=F[0];E=F[1];loadCtx(F[0].ctx)}
+function swapTo(s){saveCtx(F[0].ctx);CUR=s;P=F[s];E=F[1-s];setChar(P.ch);if(s===1){MIRC=true;mirF(F[0]);mirF(F[1]);REC={f:FXS.length,r:rings.length,s:sparks.length,d:dusts.length,g:ghosts.length,p:pops.length}}loadCtx(F[s].ctx)}
+function swapBack(){const s=CUR;saveCtx(F[s].ctx);if(s===1){mirF(F[0]);mirF(F[1]);mirNew();MIRC=false}CUR=0;P=F[0];E=F[1];setChar(P.ch);loadCtx(F[0].ctx)}
 function asSide(s,fn){if(MODE!=='vs')return fn();const prev=CUR;if(prev===s)return fn();if(prev!==0)swapBack();if(s!==0)swapTo(s);let r;try{r=fn()}finally{if(s!==0)swapBack();if(prev!==0)swapTo(prev)}return r}
 const wxOf=x=>MIRC?STW-x:x;
 const VST=['stun','juggle','down','tech'];
@@ -460,11 +532,13 @@ function doGesture(a){
   const prev=CMDH[CMDH.length-1];
   if(!a.requeue){CMDH.push({k:tk,t:now,ts:a.gt==='h'?(a.t0||now):now});if(CMDH.length>6)CMDH.shift();chkTry()}   // 先行入力から出す時は、手を数え直さない
   // 投げ（control-brief v8.3・B-002）：密着でスティック前を入れたまま【強】タップ
-  if(tk==='Ht'&&P.y===0&&sFwd(stickVec().s)&&E.x-P.x<=CFG.throwD&&E.y===0&&!E.ko&&!['juggle','down','tech'].includes(E.st)&&(groundFree()||P.st==='crouch')){exec('throw',a,true);return}
+  if(tk==='Ht'&&P.y===0&&sFwd(stickVec().s)&&E.x-P.x<=CFG.throwD&&E.y===0&&!E.ko&&!['juggle','down','tech'].includes(E.st)&&(groundFree()||P.st==='crouch')){exec(P.ch==='RIN'?'r_throw':'throw',a,true);return}
   // コマンド（長いものから）。入れられないときは先行入力として待つ
   const c=a.requeue?null:matchCmd(now);if(c){doCommand(c.k,a);return}
   if(CFG.easy&&a.btn==='L'&&a.gt==='t'&&easyTap(a))return;
   // 追いかけジャンプ（打ち上げが当たったあと、タップ）
+  if(P.ch==='RIN'&&a.gt==='t'&&a.btn==='L'&&E.st==='juggle'&&frameNo-(P.lastLaunch||-999)<150&&(P.chaseN||0)<(P.kaku?3:2)&&P.st!=='chase'){   // RIN：近ければ追いかけジャンプ、遠ければ追い矢（rin-moveset 1-2）
+    if(E.x-P.x<150&&P.y===0&&!(P.chaseN||0)){P.chaseN=9;startChase(a)}else{P.chaseN=(P.chaseN||0)+1;setMove('r_chase',true);okMove(a,MV.r_chase)}return}
   if(a.gt==='t'&&P.st==='atk'&&P.mv.launch&&P.hit&&E.st==='juggle'){startChase(a);return}
   if(P.st==='chase'&&a.gt==='t'){P.queued=a;P.qT=24;return}
   if(P.st==='stun'||P.st==='block'){ngMove(a,'やられ中');return}
@@ -472,7 +546,7 @@ function doGesture(a){
   let k=(GRID[st][a.btn]||{})[gk];
   if(!k){ngMove(a,'この技はなし');return}
   // タップの連打（ジャブ→ワンツー→回し蹴り など）
-  if(a.gt==='t'&&P.st==='atk'&&P.mv.nx&&(k==='s_lp1'&&P.mv.key.startsWith('s_lp')||k==='j_lp1'&&P.mv.key.startsWith('j_lp')))k=P.mv.nx;
+  if(a.gt==='t'&&P.st==='atk'&&P.mv.nx&&(k==='s_lp1'&&P.mv.key.startsWith('s_lp')||k==='j_lp1'&&P.mv.key.startsWith('j_lp')||k==='r_s_lp1'&&P.mv.key.startsWith('r_s_lp')||k==='r_j_lp1'&&P.mv.key.startsWith('r_j_lp')))k=P.mv.nx;
   exec(k,a,false,false,!!a.replaceTap);
 }
 function tokMatch(p,k){return p[0]==='*'?k.slice(1)===p.slice(1):p===k}
@@ -481,7 +555,7 @@ function matchCmd(now){
     if(!cmdOn(c))continue;
     const tail=CMDH.slice(-n);let ok=true;
     for(let i=0;i<n;i++){if(!tokMatch(c.seq[i],tail[i].k)){ok=false;break}if(i&&(tail[i].ts||tail[i].t)-tail[i-1].t>CFG.cmdGap){ok=false;break}}
-    if(!ok)continue;const air=P.y<0||P.st==='jump'||P.st==='adash';if(c.air&&!air)continue;if(!c.air&&c.k!=='super'&&air)continue;
+    if(!ok)continue;const air=P.y<0||P.st==='jump'||P.st==='adash';if(c.air&&!air)continue;if(!c.air&&!c.both&&!MV[c.k].sup&&air)continue;
     return c}
   return null}
 function cmdPrefix(){ // いまの手が、どれかのコマンドの2手目以降の途中か
@@ -601,7 +675,7 @@ function doIchigeki(a){ // 一撃必殺：覚醒中に 弱N ホールド → 強
   const ok=(groundFree()||(P.st==='atk'&&(P.mv.nrm||inCancel(P.mv))))&&P.y===0;
   if(!ok){fingerPop('× 動けない間',a.x,a.y,false);return}
   for(const g of PT.values())if(g.kind==='btn')g.spent=true;
-  setMove('ichigeki',true);P.ichiUsed=1;SE.charge();vib(30);ST.ichi=(ST.ichi||0)+1;hist('一撃必殺（振りかぶり）',true);fingerPop('一撃必殺',a.x,a.y,true);fxAdd('snow',P.x,P.y-70,1,1);
+  setMove(P.ch==='RIN'?'r_ichigeki':'ichigeki',true);P.ichiUsed=1;SE.charge();vib(30);ST.ichi=(ST.ichi||0)+1;hist('一撃必殺（振りかぶり）',true);fingerPop('一撃必殺',a.x,a.y,true);fxAdd('snow',P.x,P.y-70,1,1);
 }
 function ichiUpdate(m){ // 振りかぶり → 一振り（当たりは4Fだけ・前へ0.8H）→ 外れたら硬直
   if(P.t>m.su&&P.t<=m.su+m.ac){P.x=Math.min(XR,P.x+20);if(E.x-P.x<BODY)P.x=E.x-BODY;
@@ -617,7 +691,7 @@ function ichiUpdate(m){ // 振りかぶり → 一振り（当たりは4Fだけ�
 function ichiMiss(why){P.kaku=0;P.sp=0;bigText(why,C.dim);fxAdd('impact_ring',P.x+20,P.y-60,1,0.7);SE.fail();vib(40);hist('一撃必殺：'+why+'（覚醒が切れた）',false)}
 let ICH=null,SNOW=[];
 function startICH(){ // 当たった：止め・白フラッシュ・反転 → カットイン → 必殺技モーション（寄り）→ 勝ち（awakening-request 1-2・約5.5秒）
-  ICH={t:0,ex:E.x,exW:wxOf(E.x),side:CUR,px:P.x,flip:false,pz:['ikkatsu_2b','rush']};if(MODE==='vs')E.vict=true;P.st='ich';P.kaku=0;P.inv=1;inQ.length=0;P.queued=null;E.st='stun';E.stun=999;E.atk=null;E.y=0;
+  ICH={ch:P.ch,nm:P.ch==='RIN'?'チェックメイト・アロー':'白猫終閃',t:0,ex:E.x,exW:wxOf(E.x),side:CUR,px:P.x,flip:false,pz:['ikkatsu_2b','rush']};if(MODE==='vs')E.vict=true;P.st='ich';P.kaku=0;P.inv=1;inQ.length=0;P.queued=null;E.st='stun';E.stun=999;E.atk=null;E.y=0;
   for(const g of PT.values())if(g.kind==='btn')g.spent=true;
   shake=14;SE.ichi();vib([80,40,160]);chkDone('ichigeki');ST.ichiHit=(ST.ichiHit||0)+1;hist('一撃必殺：当たった',true);
   SNOW=Array.from({length:90},()=>({x:Math.random(),y:Math.random(),v:0.6+Math.random()*1.2,s:1+(Math.random()*2|0)}));
@@ -705,12 +779,13 @@ function hitE(m,opt){
   else if(m.slam){E.st='juggle';E.vy=10;E.slam=true;E.bigb=!!m.bigb;E.vx=0.2}
   else if(m.launch){E.st='juggle';E.vy=-W.launch*Math.sqrt(m.launch);E.vx=0.4;E.airT=0;E.bounced=false}
   else if(m.sup){E.st='juggle';E.vy=-9;E.vx=3.6;E.airT=0}
-  else if(m.lift!==undefined&&air&&!(m.once&&P.once[m.once])){if(m.once)P.once[m.once]=1;E.st='juggle';E.vy=m.lift;E.vx=m.kb||0.3;P.vy=Math.min(P.vy,m.lift<-3?m.lift+0.5:-2.0)}
+  else if(m.lift!==undefined&&air&&!(m.once&&P.once[m.once])){if(m.once)P.once[m.once]=1;E.st='juggle';E.vy=m.lift;E.vx=m.kb||0.3;if(!opt.proj)P.vy=Math.min(P.vy,m.lift<-3?m.lift+0.5:-2.0)}
   else if(m.pop||m.charge){E.st='juggle';E.vy=-((m.pop||4.5)+(P.lv||0)*2);E.vx=m.kb||1.2}
-  else if(air&&m.air){E.st='juggle';E.vy=m.adv?-2.6:-2.1;E.vx=m.kb||0.3;P.vy=Math.min(P.vy,-2.0)}
+  else if(air&&m.air){E.st='juggle';E.vy=m.adv?-2.6:-2.1;E.vx=m.kb||0.3;if(!opt.proj)P.vy=Math.min(P.vy,-2.0)}
   else if(air){E.st='juggle';E.vy=Math.min(E.vy,-3.5);E.vx=m.kb||1}
   else{E.st='stun';E.stun=(m.stun||18)+(ctr?10:0)+(P.cmdPath?8:0);E.vx=P.cmdPath?Math.min(m.kb||0.4,1):(m.kb||0.4)}
   if(E.st==='juggle'&&fin&&!m.sup){E.vx=Math.max(E.vx,3.4);E.vy=Math.min(E.vy,-4)}
+  if(m.launch&&E.st==='juggle'){P.lastLaunch=frameNo;P.chaseN=0}
   // 手ごたえ
   let stop=opt.multi?2:(m.stop||3);if(fin)stop=10;freeze=Math.max(freeze,Math.round(stop*CFG.stopx/100));
   const bigH=!m.nrm;
@@ -829,12 +904,13 @@ function updateP(){
     let held=false;for(const g of PT.values())if(g.kind==='btn'&&g.gid===P.relG)held=true;if(!held&&!P.relKey)P.st='idle';P.t++;if(P.t>240){P.st='idle';P.relKey=null}break}
   case 'atk':{
     const m=P.mv;P.t++;
-    if(m.ichi){ichiUpdate(m);break}
+    if(m.ichi&&!m.pj){ichiUpdate(m);break}
+    if(m.pj&&P.t===m.su+1)spawnPJ(m);
     if(P.t===m.su+1){if(m.key==='sp_hyosho')fxAdd('ice_line',P.x+50,-8,1);else if(/蹴|脚|膝|払|サマー|かかと|踏みつけ/.test(m.nm))fxAdd('trail_lime',P.x+28,P.y-(m.low||/払/.test(m.nm)?20:60),1,0.6)}
     if(!m.air&&m.step&&P.t<=m.su&&E.x-P.x>m.rx-6){P.x+=Math.min(6,m.step/m.su)}
     if(m.mvx&&P.t<=m.su)P.x+=m.mvx/m.su;
     if(m.dash&&P.t<=m.su+m.ac&&!(P.hit&&!m.hits)){const d=m.charge?m.dash+80*(P.lv||0):m.dash;const sp=d/(m.su+m.ac)*(P.t<=m.su?0.4:1.3);if(!(m.hits&&E.x-P.x<40))P.x+=sp}
-    if(m.launch&&P.t===m.su){P.vy=-m.hop;P.y=-0.01;P.vx=0.6}
+    if(m.launch&&P.t===m.su&&m.hop){P.vy=-m.hop;P.y=-0.01;P.vx=0.6}
     if((m.rise||m.hopx)&&P.t===m.su){P.vy=-(m.rise||m.hopx);P.y=-0.01;P.vx=m.hopx?1.2:0.4}
     if(m.air||P.y<0){
       if(m.slam){if(P.t<=m.su){P.vy=0}else P.vy=m.bigb?11:9.5;P.y+=P.vy;P.x+=0.4;if(P.y>=0){P.y=0;P.vy=0;land(P.hit?10:16);shake=Math.max(shake,m.bigb?6:3);rings.push({x:P.x,y:0,t:14,c:'#ffd23d'});break}}
@@ -854,8 +930,10 @@ function updateP(){
   }
   // 動ける時：左手のスティック（rules 2-2）
   if(groundFree()){
-    if(sUp(v.s)){P.st='jsq';P.t=W.jsq;P.jdir=v.s===1?1:v.s===3?-1:0}
+    if(sUp(v.s)&&P.pinJ>0)P.st='idle';
+    else if(sUp(v.s)){P.st='jsq';P.t=W.jsq;P.jdir=v.s===1?1:v.s===3?-1:0}
     else if(sDown(v.s))P.st='crouch';
+    else if(P.pin>0&&(v.s===0||v.s===4))P.st=v.s===4?'guard':'idle';
     else if(v.s===0){P.st='walk';P.x+=W.walkF;P.wdir=1}
     else if(v.s===4){P.st='guard';P.x-=W.walkB;P.wdir=-1}
     else P.st='idle';
@@ -901,30 +979,101 @@ function updateE(){
   }
 }
 
+// ================= 矢（飛び道具）のしくみ（rin-moveset 1-1・ranged-template 2〜3章）=================
+// 世界の座標で持つ。打ち消し（強さ）・ガード（下段の矢はしゃがみガード）・当て身で取る・弾抜け（全身無敵）・画面の端で消える
+let PROJ=[],PJID=0;
+const pjLimit=f=>f.kaku>0?3:2;
+function spawnPJ(m){ // 撃った人の向きで作る（今の P が撃った人）
+  const list=Array.isArray(m.pj)?m.pj:[m.pj],dir=MIRC?-1:1;
+  if(!m.cmd&&!m.sup&&!m.ichi&&list[0].k!=='piece'){const n=PROJ.filter(p=>p.side===P.side&&!p.dead&&['line','ground','arc','homing'].includes(p.k)).length;
+    if(n>=pjLimit(P)){pop('矢は'+pjLimit(P)+'本まで',P,C.dim,12);return}}
+  if(list[0].k==='piece')for(const p of PROJ)if(p.side===P.side&&p.k==='piece'&&!!p.trap===!!list[0].trap)p.dead=true;   // 置き駒・罠は1つずつ
+  for(const o of list){
+    let x=P.x+(o.x0!==undefined?o.x0:24),y=P.y+(o.y0!==undefined?o.y0:-62),vx,vy;
+    if(o.k==='ground'){y=-8}
+    if(o.k==='pillar'){x=Math.min(E.x,P.x+360);y=0}
+    if(o.k==='rain'){x=E.x+(o.xo||0);y=-240}
+    if(o.k==='homing'){const dx=E.x-P.x,dy=(E.y-55)-(P.y-60),d=Math.max(1,Math.hypot(dx,dy));vx=dx/d*o.spd;vy=dy/d*o.spd}
+    else if(o.k==='rain'){vx=0;vy=7}
+    else if(o.vx!==undefined){vx=o.vx;vy=o.vy}
+    else{const a=(o.ang||0)*Math.PI/180,sp=o.spd*(o.chg?1+(P.lv||0)*1.6:1);vx=Math.cos(a)*sp;vy=-Math.sin(a)*sp}
+    if(o.k==='piece'||o.k==='pillar'){vx=0;vy=0}
+    if(o.yo)y+=o.yo;
+    const pm=Object.assign({},m,{nm:m.nm,dmg:o.dmg*(o.chg?1+(P.lv||0)*0.7:1),stun:o.stun,low:o.low,launch:o.launch,lift:o.lift,slam:o.slam,pin:o.pin,pinJ:o.pinJ,air:o.air,stop:o.stop||(m.cmd?5:3),
+      pop:o.chg&&P.just?6:undefined,charge:o.chg&&P.just?1:undefined,gb:o.chg&&P.just,pj:null,sk:m.sk,nrm:m.nrm,cmd:m.cmd,sup:false,fin:o.fin,kb:o.chg&&P.just?5:(o.launch?0.4:0.8)});
+    PROJ.push({id:++PJID,side:P.side,x:wxOf(x),y,vx:vx*dir,vy,g:o.g||0,k:o.k,str:o.str+(o.chg&&P.lv>=1?1:0),h:o.h||7,life:o.life||400,age:0,wait:o.wait||0,
+      m:pm,mk:m.key,c1:!!o.c1,ichi:!!o.ichi,trap:!!o.trap,gold:!!o.gold||!!P.kaku,big:!!o.big||(o.chg&&P.lv>=1),multi:!!o.multi,fin:!!o.fin,just:!!(o.chg&&P.just),lv:P.lv||0,strong:!!P.strongCmd,cmdPath:!!P.cmdPath,low:!!o.low})}
+  SE.fire()}
+function pjBox(f){const cr=f.st==='crouch'||(f.st==='block'&&f.crouchB)||(f.st==='atk'&&f.mv&&/^(r_)?c_/.test(f.mv.key));return {top:f.y-(cr?60:100),bot:f.y+2}}
+function pjStep(){
+  for(const p of PROJ){if(p.dead)continue;if(p.wait>0){p.wait--;continue}
+    if(p.k==='homing'){const tg=F[1-p.side];if(tg&&tg.vict){const dx=tg.x-p.x,dy=(tg.y-55)-p.y,d=Math.max(1,Math.hypot(dx,dy)),sp=Math.hypot(p.vx,p.vy);p.vx=dx/d*sp;p.vy=dy/d*sp}}   // 追い矢：空中の相手を追う
+    p.age++;p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;if(--p.life<=0)p.dead=true;
+    if(p.k==='ground')p.y=-8;
+    if((p.k==='line'||p.k==='arc'||p.k==='rain'||p.k==='homing')&&p.y>=-2){p.dead=true;dust(p.x,3,0,0)}
+    if(p.x<XL-30||p.x>XR+30)p.dead=true;
+    if(p.dead&&p.ichi)pjIchiMiss(p)}
+  // 打ち消し（強さを比べる。同じなら両方消える・強いほうは弱いほうのぶん弱くなる）
+  for(const a of PROJ)for(const b of PROJ){if(a.dead||b.dead||a.side>=b.side||a.wait||b.wait||a.k==='piece'||b.k==='piece'||a.k==='pillar'||b.k==='pillar')continue;
+    if(Math.abs(a.x-b.x)<16&&Math.abs(a.y-b.y)<a.h+b.h+6){const sa=a.str,sb=b.str;a.str-=sb;b.str-=sa;if(a.str<=0)a.dead=true;if(b.str<=0)b.dead=true;
+      sparks.push({wx:(a.x+b.x)/2,wy:(a.y+b.y)/2,t:10,r:Math.random(),c:C.gold,big:1});SE.block();pop('相殺',{x:(a.x+b.x)/2-24,y:Math.min(a.y,b.y)+60},C.gold,12);
+      if(a.dead&&a.ichi)pjIchiMiss(a);if(b.dead&&b.ichi)pjIchiMiss(b)}}
+  // 相手に当たる
+  for(const p of PROJ){if(p.dead||p.wait)continue;const f=F[1-p.side];if(!f||f.ko||f.st==='tech'||(f.st==='down'&&!p.m.otg)||f.st==='ich')continue;if(MATCH&&MATCH.phase!=='fight')continue;
+    const bx=pjBox(f),w=p.k==='piece'?22:p.k==='pillar'?26:18;
+    if(Math.abs(p.x-f.x)<w&&p.y+p.h>=bx.top&&p.y-p.h<=bx.bot){p.dead=true;
+      if(p.ichi)pjIchiHit(p,f);else projHit(p)}}
+  PROJ=PROJ.filter(p=>!p.dead)}
+function projHit(p){asSide(p.side,()=>{
+  const sv={hit:P.hit,hitDone:P.hitDone,sinceHit:P.sinceHit,hitN:P.hitN,just:P.just,weak:P.weak,cmdPath:P.cmdPath,lv:P.lv,strongCmd:P.strongCmd};
+  P.just=p.just;P.weak=false;P.cmdPath=p.cmdPath;P.lv=p.lv;P.strongCmd=p.strong;
+  hitE(p.m,{proj:p,multi:p.multi,fin:p.fin});
+  const own=P.st==='atk'&&P.mv&&P.mv.key===p.mk;
+  if(!own){P.hit=sv.hit;P.hitDone=sv.hitDone;P.sinceHit=sv.sinceHit;P.hitN=sv.hitN}
+  P.just=sv.just;P.weak=sv.weak;P.cmdPath=sv.cmdPath;P.lv=sv.lv;P.strongCmd=sv.strongCmd;
+  if(E.vict){if(p.c1&&E.st==='stun')E.stun=Math.max(E.stun,40);   // 1手目の矢が当たった相手は、2手目の矢が届くまでやられのまま（rin-moveset 1-3・最大48F）
+    if(p.m.pin){E.pin=p.m.pin;pop('縫い止め',E,C.gold,13)}if(p.m.pinJ)E.pinJ=p.m.pinJ}})}
+function pjIchiMiss(p){if(p.done)return;p.done=1;asSide(p.side,()=>{if(P.kaku||P.sp)ichiMiss('外れ')})}
+function pjIchiHit(p,f){if(p.done)return;p.done=1;asSide(p.side,()=>{   // 一撃必殺の矢：立ちの胸〜頭だけ（当たり判定で）。ガードされたら外れと同じ。YUKI の当て身で取られる
+  const s=stickOf(E).s,free=['idle','walk','guard','block','land'].includes(E.st)&&E.y===0;
+  if(E.st==='atk'&&E.mv&&E.mv.parry&&E.ch==='YUKI'&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)+4){asSide(E.side,()=>{SE.parry();pop('矢を取った',P,C.lime,16);bigText('CATCH',C.lime)});ichiMiss('取られた');return}
+  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||E.st==='burst'){ichiMiss('外れ');return}
+  if(free&&sBack(s)&&s!==3){E.st='block';E.stun=20;SE.block();pop('ガード',E,C.mint);ichiMiss('ガードされた');return}
+  startICH()})}
+function drawProj(c){
+  for(const p of PROJ){if(p.wait)continue;const X=OX+p.x*ZP,Y=OY+p.y*ZP,d=DOT;
+    if(p.k==='piece'){c.fillStyle=p.trap?'#3a2a12':'#1a1422';c.fillRect(Math.round(X/d)*d-4*d,Math.round(Y/d)*d-12*d,8*d,12*d);c.fillStyle=C.gold;c.fillRect(Math.round(X/d)*d-3*d,Math.round(Y/d)*d-16*d,6*d,4*d);c.fillRect(Math.round(X/d)*d-5*d,Math.round(Y/d)*d-2*d,10*d,2*d);continue}
+    if(p.k==='pillar'){c.globalCompositeOperation='lighter';c.fillStyle='rgba(255,210,61,'+(0.5+0.5*Math.random())+')';c.fillRect(X-6*d,Y-130*ZP/3,12*d,130*ZP/3);c.globalCompositeOperation='source-over';continue}
+    const sp=Math.hypot(p.vx,p.vy)||1,ux=p.vx/sp,uy=p.vy/sp,L=(p.big?34:p.str>=2?22:16)*ZP/3;
+    c.globalCompositeOperation='lighter';c.strokeStyle=p.gold?'rgba(255,210,61,.35)':'rgba(190,150,255,.3)';c.lineWidth=(p.big?6:3)*d;c.beginPath();c.moveTo(X-ux*L*2.2,Y-uy*L*2.2);c.lineTo(X,Y);c.stroke();c.globalCompositeOperation='source-over';
+    c.strokeStyle=p.gold?C.gold:'#e8dcff';c.lineWidth=(p.big?3:p.str>=2?2:1)*d;c.beginPath();c.moveTo(Math.round((X-ux*L)/d)*d,Math.round((Y-uy*L)/d)*d);c.lineTo(Math.round(X/d)*d,Math.round(Y/d)*d);c.stroke();
+    c.fillStyle=p.gold?'#fff6c8':'#ffffff';c.fillRect(Math.round(X/d)*d-d,Math.round(Y/d)*d-d,2*d,2*d)}}
 // ================= 1対1：ガード・当て身・投げ抜け（相手の側で見る） =================
 function vsDefend(m,opt,wasCombo){
   if(opt.counter){E.vict=true;return false}
-  if(E.st==='atk'&&E.mv&&E.mv.parry&&!m.thr&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)){   // 受け流し・当て身返し（受けた側の技）
+  if(opt.proj&&E.st==='atk'&&E.mv&&E.mv.parry&&E.ch==='YUKI'&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)+4){   // YUKI の当て身・受け流し・白猫の構えで矢を取る（チーフの決め）
+    asSide(E.side,()=>{SE.parry();vib([20,30,20]);pop('矢を取った',P,C.lime,16);bigText('CATCH',C.lime);P.sp=Math.min(100,P.sp+10);freeze=Math.max(freeze,10);flash=6;flashC='rgba(198,255,61,';rings.push({x:P.x+20,y:P.y-60,t:20,c:C.lime});ST.catch=(ST.catch||0)+1});return true}
+  if(E.st==='atk'&&E.mv&&E.mv.parry&&!m.thr&&!opt.proj&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)){   // 受け流し・当て身返し（受けた側の技）
     P.hitDone=true;asSide(E.side,()=>{eHitsP(0);if(E.st==='stun')E.vict=true});return true}
   if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||E.st==='burst'||E.st==='duck'||(E.st==='back'&&E.t<=W.backInv)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
   if(m.thr){const tech=E.cpu?Math.random()<CPUL[VSCFG.lv].tech:(E.lastHt!==undefined&&frameNo-E.lastHt<=8);   // 投げ抜け：投げられてから 6F 以内に【強】タップ（rules 2-2）
     if(tech){P.hitDone=true;E.x+=26;P.x-=8;E.st='block';E.stun=14;SE.block();pop('投げ抜け',E,C.mint);bigText('投げ抜け',C.mint);return true}}
   if(!wasCombo&&!m.thr&&E.y===0&&['idle','walk','crouch','guard','block','land'].includes(E.st)){   // ガード：後ろ（下段は しゃがみガード、空中の技・跳び膝は 立ちガード）
     const s=stickOf(E).s,back=sBack(s)&&s!==3,low=s===5,oh=!!(m.air||m.key==='s_lh_u');
-    if(back&&!(m.low&&!low)&&!(oh&&low)){E.st='block';E.stun=Math.round(10+(m.stop||3)*2+(m.sk?6:0));E.x+=m.sk?10:5;E.crouchB=low;
+    if(back&&!(m.low&&!low)&&!(oh&&low)&&!m.gb){if(m.pushG)E.x+=60;E.st='block';E.stun=Math.round(10+(m.stop||3)*2+(m.sk?6:0));E.x+=m.sk?10:5;E.crouchB=low;
       P.hit=true;P.hitDone=true;P.sinceHit=0;P.hitN=(P.hitN||0)+1;SE.block();pop('ガード',E,C.mint);freeze=Math.max(freeze,4);E.sp=Math.min(100,E.sp+2);P.sp=Math.min(100,P.sp+1);return true}}
   E.vict=true;E.mv=null;E.queued=null;E.relKey=null;E.inv=0;E.crouchB=false;
   return false}
 
 // ================= 1対1：試合の流れ（2本先取・45秒・rules 5章） =================
-function vsStart(){MODE='vs';CHK=null;task=null;ICH=null;F=[newFighter(0),newFighter(1)];F[0].sp=F[1].sp=50;
+function vsStart(){MODE='vs';CHK=null;task=null;ICH=null;PROJ=[];F=[newFighter(0,VSCFG.me),newFighter(1,VSCFG.op)];setChar(F[0].ch);F[0].sp=F[1].sp=50;
   MATCH={wins:[0,0],round:1,time:VS_T,phase:'intro',pt:0,res:[],last:null};vsRound(true);try{save('smf_vslv',VSCFG.lv)}catch(e){}}
 function vsRound(first){const M=MATCH;
   for(const f of F){const sp=first?50:(f.kakuUsed?0:Math.floor(f.sp/2));
     Object.assign(f,{x:STW/2+(f.side?60:-60),y:0,vx:0,vy:0,st:'idle',t:0,mv:null,hit:false,hitDone:false,sinceHit:99,canc:0,airDash:false,inv:0,queued:null,qT:0,hp:1000,stun:0,burstUsed:false,just:false,jdir:0,relKey:null,once:{},kaku:0,kakuUsed:false,
-      airT:0,bounced:false,slam:false,wallUsed:false,ko:0,vict:false,ai:null,sp,crouchB:false,
+      airT:0,bounced:false,slam:false,wallUsed:false,ko:0,vict:false,ai:null,sp,crouchB:false,pin:0,pinJ:0,lastLaunch:-999,chaseN:0,
       ctx:{combo:0,comboDmg:0,comboSup:false,comboBounce:false,comboFin:false,comboShow:0,lastCombo:null,endSoon:0,CMDH:[],NT:[],SPH:[]}});f.ctl.stick={x:0,y:0,s:-1}}
-  CUR=0;MIRC=false;P=F[0];E=F[1];loadCtx(F[0].ctx);FXS.length=0;rings.length=0;ghosts.length=0;pops.length=0;
+  CUR=0;MIRC=false;P=F[0];E=F[1];setChar(P.ch);loadCtx(F[0].ctx);PROJ=[];FXS.length=0;rings.length=0;ghosts.length=0;pops.length=0;
   M.time=VS_T;M.phase='intro';M.pt=0;M.last=null;CAMX=STW/2;CAMY=0;freeze=0;slow=0;punch=0;cutin=0}
 function vsKO(w,how){const M=MATCH;if(!M||M.phase!=='fight')return;M.phase='ko';M.pt=0;M.wins[w]++;M.last={w,how};M.res.push(M.last);
   if(how==='ko'){slow=Math.max(slow,40);freeze=Math.max(freeze,24);flash=10;flashC='rgba(255,255,255,';SE.fin();vib([40,30,80])}}
@@ -938,7 +1087,7 @@ function vsNextRound(){const M=MATCH;
 function vsFxP(){ // 1人ぶんの残像・土ぼこり（その人の向きで）
   if(CFG.fx&&P.st==='atk'&&(P.mv.dash||P.mv.adv)&&P.t>P.mv.su&&P.t<=P.mv.su+P.mv.ac&&(frameNo%4===0))fxAdd('speedline_01',P.x-40,P.y-55,1);
   if(CFG.fx&&(P.st==='dash'||P.st==='back')&&P.t===1)fxAdd('dust_02',P.x,0,P.st==='dash'?-1:1);
-  if(CFG.fx&&(frameNo&1)&&((['dash','back','adash','chase','burst'].includes(P.st)||(P.st==='jump'&&P.jdir))||(P.st==='atk'&&(P.mv.dash||P.mv.adv||P.mv.slam||P.mv.sup||P.mv.launch)&&P.t<=P.mv.su+P.mv.ac)))ghosts.push({x:P.x,y:P.y,pose:poseP(),t:10,ch:P.side?'YUKI2':'YUKI'});
+  if(CFG.fx&&(frameNo&1)&&((['dash','back','adash','chase','burst'].includes(P.st)||(P.st==='jump'&&P.jdir))||(P.st==='atk'&&(P.mv.dash||P.mv.adv||P.mv.slam||P.mv.sup||P.mv.launch)&&P.t<=P.mv.su+P.mv.ac)))ghosts.push({x:P.x,y:P.y,pose:poseP(),t:10,ch:chVar(P)});
 }
 function vsStep(){
   const M=MATCH;if(!M)return;
@@ -955,6 +1104,7 @@ function vsStep(){
   for(let s=0;s<2;s++){const f=F[s];
     asSide(s,()=>{
       if(P.kaku>0&&--P.kaku===0)pop('覚醒おわり',P,C.dim,13);
+      if(P.pin>0)P.pin--;if(P.pinJ>0)P.pinJ--;
       if(endSoon>0&&--endSoon===0)endCombo();
       if(comboShow>0&&combo===0)comboShow--;if(lastCombo&&--lastCombo.t<=0)lastCombo=null;
       if(P.cpu&&M.phase==='fight')cpuThink();
@@ -965,6 +1115,7 @@ function vsStep(){
     if(isVict(f))asSide(1-s,()=>updateE());
     else{f.vict=false;asSide(s,()=>{updateP();vsFxP()})}
   }
+  pjStep();
   // 押し合い・端・最大の間合い（2人とも同じ扱い）
   P.x=Math.max(XL,Math.min(XR,P.x));E.x=Math.max(XL,Math.min(XR,E.x));
   const overlapY=Math.abs(P.y-E.y)<80,minD=overlapY?BODY:10;
@@ -994,7 +1145,14 @@ const CSCR={ // コンボの台本（段階ごと。moveset 2-8 の基本のコ�
   3:[['L','t'],['L','t'],['L','t'],['H','f','U'],['L','t','chase'],['L','t'],['L','t'],['L','t'],['H','f','D'],['W',22],['L','f','F'],['H','h','F']],
   4:[['L','t'],['L','f','D'],['H','h','U'],['L','t','chase'],['L','t'],['L','t'],['L','f','U'],['H','h','D'],['W',26],['L','f','F'],['H','h','F']],
   5:[['L','t'],['L','t'],['L','f','D'],['H','h','U'],['L','t','chase'],['L','t'],['L','t'],['L','f','U'],['H','h','D'],['W',26],['L','f','F'],['L','f','B','sup'],['H','h','F']]};
+const CSCR_R={ // RIN のコンボの台本（rin-moveset 2-8）
+  1:[['L','t'],['L','t'],['L','t']],
+  2:[['L','t'],['L','t'],['H','h','U'],['L','t','chase'],['W',10],['L','t','chase']],
+  3:[['L','t'],['L','t'],['H','h','U'],['L','t','chase'],['L','t'],['L','t'],['H','f','D'],['W',22],['L','f','F'],['H','h','F']],
+  4:[['L','t'],['L','t'],['H','h','U'],['L','t','chase'],['L','t'],['L','t'],['L','t'],['H','f','D'],['W',22],['L','f','F'],['H','h','F']],
+  5:[['L','t'],['L','t'],['H','h','U'],['L','t','chase'],['L','t'],['L','t'],['L','t'],['H','f','D'],['W',22],['L','f','F'],['L','f','B','sup'],['H','h','F']]};
 function cpuThink(){
+  if(P.fixed)return;   // テスト用：スティックを固定
   const L=CPUL[VSCFG.lv];let ai=P.ai;
   if(!ai)ai=P.ai={h:[],act:null,actEnd:0,scr:null,defId:null,pun:null,pend:[],guardUntil:0,guardLow:false,jumpN:0,aaJ:-1,lastAir:false};
   const mvE=E.st==='atk'&&E.mv?E.mv:null;
@@ -1005,6 +1163,8 @@ function cpuThink(){
   const setStick=s=>{const a=K[s]||[0,0];st.x=a[0];st.y=a[1];st.s=s<0?-1:s};
   const press=(b,gt,d)=>request(G_(b,gt,d));
   if(ai.pend.length){request(ai.pend.shift());return}
+  const RIN=P.ch==='RIN';
+  if(P.st==='charge'){ai.chS=ai.chS||frameNo;if(frameNo-ai.chS>(VSCFG.lv>=4?44:26)){ai.chS=0;request({kind:'rel',gid:P.relG,x:0,y:0})}return}
   if(P.vict){setStick(-1);ai.scr=null;ai.act=null;
     if(VSCFG.lv>=3&&P.st==='juggle'&&canBurst()&&Math.random()<0.006*VSCFG.lv)request({kind:'burst'});return}
   const free=groundFree()||P.st==='land'||P.st==='block',d=E.x-P.x;
@@ -1015,12 +1175,15 @@ function cpuThink(){
       const sp=S.list[S.i];if(!sp){ai.scr=null;return}
       if(sp[0]==='W'){S.w=sp[1];S.i++;return}
       const chase=sp[2]==='chase';
-      const ready=chase?(P.st==='atk'&&P.mv.launch&&P.hit&&E.st==='juggle'):((P.st==='atk'&&P.hit&&P.sinceHit>=3)||groundFree()||airFree()||(P.st==='land'&&P.hit));
+      const ready=chase?(RIN?(E.st==='juggle'&&frameNo-(P.lastLaunch||-999)<150&&P.st!=='chase'&&!(P.st==='atk'&&P.mv&&P.mv.key==='r_chase'&&P.t<10)):(P.st==='atk'&&P.mv.launch&&P.hit&&E.st==='juggle')):((P.st==='atk'&&P.hit&&P.sinceHit>=3)||groundFree()||airFree()||(P.st==='land'&&P.hit));
       if(ready){if(Math.random()<L.miss){ai.scr=null;return}
         if(sp[3]==='sup'&&P.sp<100&&!P.kaku){S.i++;return}
         press(sp[0],sp[1],chase?null:sp[2]);S.i++;S.w=sp[1]==='f'?1:0}
       return}}
-  if(P.st==='atk'&&P.hit&&E.vict&&P.mv&&P.mv.nrm&&L.combo>0){ai.scr={i:1,list:CSCR[L.combo],w:2};return}
+  // RIN：撃った矢が当たったら2手目の矢（三連の矢・チェックメイト）、跳ね上げの矢が当たったら追い矢
+  if(RIN&&ai.follow){if(frameNo>ai.follow.until)ai.follow=null;else if(E.vict&&E.st==='stun'){if(Math.random()>=L.miss)press(...ai.follow.g);ai.follow=null;return}}
+  if(RIN&&E.st==='juggle'&&frameNo-(P.lastLaunch||-999)<150&&(P.chaseN||0)<2&&!ai.scr&&(free||P.st==='jump'||(P.st==='atk'&&P.t>8))&&frameNo-(ai.chT||0)>10){ai.chT=frameNo;if(Math.random()>=L.miss)press('L','t');return}
+  if(P.st==='atk'&&P.hit&&E.vict&&P.mv&&P.mv.nrm&&L.combo>0&&!P.mv.pj&&d<100){ai.scr={i:1,list:(RIN?CSCR_R:CSCR)[L.combo],w:2};return}
   const canAct=free||['walk','guard','crouch'].includes(P.st);
   if(canAct){
     // 守り：見えた技に、ガード（下段はしゃがみ）・当て身
@@ -1028,13 +1191,20 @@ function cpuThink(){
       if(act&&d<rng&&ai.defId!==sn.id){ai.defId=sn.id;const r=Math.random();
         if(r<L.parry&&!m.low&&!m.air&&!m.thr&&!m.ichi){press('H','h','B');ai.guardUntil=0;return}
         if(r<L.parry+L.guard){ai.guardUntil=frameNo+Math.max(18,(m.su||0)+(m.ac||0)+8);ai.guardLow=m.low?Math.random()<L.glow:false}else ai.guardUntil=0}}
+    // 飛んでくる矢：ガード（下段の矢はしゃがみ）・YUKI は当て身で取る・跳んでよける
+    for(const p of PROJ){if(p.side===P.side||p.dead||p.wait||p.age<L.react||p.k==='piece'||p.k==='pillar')continue;
+      const px=MIRC?STW-p.x:p.x,vx=MIRC?-p.vx:p.vx,dd=px-P.x;
+      if(dd>-10&&dd<150&&(vx<0||p.k==='rain')&&ai.pjId!==p.id){ai.pjId=p.id;const r=Math.random();
+        if(!RIN&&!p.low&&r<L.parry*1.5&&free){press('H','h','B');return}
+        if(r<L.guard){ai.guardUntil=frameNo+Math.ceil(Math.max(0,dd)/Math.max(1,Math.abs(vx)))+8;ai.guardLow=p.low||p.y>-30;break}
+        if(!RIN&&VSCFG.lv>=3&&r<L.guard+0.2&&free&&!p.low){setStick(2);ai.act=()=>setStick(-1);ai.actEnd=frameNo+24;return}}}
     if(frameNo<ai.guardUntil){setStick(ai.guardLow?5:4);return}
     // 対空
-    if(sn.y<-30&&d>20&&d<170&&ai.aaJ!==ai.jumpN){ai.aaJ=ai.jumpN;if(Math.random()<L.aa&&free){press('H','f','U');return}}
+    if(sn.y<-30&&d>20&&d<(RIN?260:170)&&ai.aaJ!==ai.jumpN){ai.aaJ=ai.jumpN;if(Math.random()<L.aa&&free){press('H','f','U');return}}
     // スキに反撃
     if(sn.mv&&!sn.vict){const m=MV[sn.mv]||{};if(sn.t>(m.su||0)+(m.ac||0)+2&&d<85&&ai.pun!==sn.id){ai.pun=sn.id;if(Math.random()<L.punish&&free){press('L','t');return}}}
     // 一撃必殺（覚醒中・立っている相手・中くらいの間合い）
-    if(P.kaku>0&&!P.ichiUsed&&L.ichi>0&&free&&d>60&&d<150&&E.y===0&&!E.vict&&['idle','walk','guard','land'].includes(sn.st)&&(L.ichi>=2||E.hp<300)&&Math.random()<0.04){
+    if(P.kaku>0&&!P.ichiUsed&&L.ichi>0&&free&&(RIN?d>100&&d<360:d>60&&d<150)&&E.y===0&&!E.vict&&['idle','walk','guard','land'].includes(sn.st)&&(L.ichi>=2||E.hp<300)&&Math.random()<0.04){
       request({kind:'tok',k:'LhN'});ai.pend.push({kind:'tok',k:'HhN'});return}
     // 覚醒
     if(L.kaku>0&&!P.kakuUsed&&!P.kaku&&(P.sp>=CFG.kakuSP||spFull())&&free&&d>90&&Math.random()<0.012){
@@ -1045,8 +1215,10 @@ function cpuThink(){
   ai.act=null;
   if(!canAct){setStick(-1);return}
   const near=d<120,mid=d<220,c=L.combo;
+  if(RIN)return cpuRinNeutral(L,d,near,mid,setStick,press,ai);
   const gw=Math.max(0,VSCFG.lv-1)*6;   // 段階が上がるほど、近い間合いでは先にガードを固める（読み）
   const T=near?[['guardW',gw],['poke',24],['low',14],['throw',d<50?14:0],['parry',8],['back',9],['wait',14],['up',5],['neko',c>=3?6:0],['crouch',6],['heavy',8]]
+    :E.ch==='RIN'?(mid?[['dash',26],['jumpF',22],['walkF',18],['hakusen',c>=2?12:0],['wait',6],['guardW',gw/2]]:[['dash',30],['jumpF',30],['walkF',25],['wait',5]])   // 相手が矢のキャラ：近づく手を増やす（ranged-template 4章）
     :mid?[['walkF',30],['dash',15],['jumpF',12],['wait',18],['walkB',10],['far',12],['guardW',gw/2]]
     :[['walkF',35],['jumpF',20],['dash',20],['wait',20]];
   let tot2=0;for(const t of T)tot2+=t[1];let r=Math.random()*tot2,pick='wait';for(const t of T){if((r-=t[1])<0){pick=t[0];break}}
@@ -1067,21 +1239,53 @@ function cpuThink(){
     case 'parry':setStick(-1);press('H','h','B');ai.act=()=>{};break;
     case 'up':setStick(-1);press('H','f','U');ai.act=()=>{};break;
     case 'neko':setStick(-1);press('L','f','D');ai.pend.push(G_('H','h','B'));ai.act=()=>{};break;
+    case 'hakusen':setStick(-1);press('L','f','F');ai.pend.push(G_('H','h','F'));ai.act=()=>{};break;
     default:ai.act=()=>setStick(-1)}
 }
 
+function cpuRinNeutral(L,d,near,mid,setStick,press,ai){ // RIN のふだんの動き（rin-moveset 6章：遠くで撃つ・近づかれたら押し返し・下がる）
+  const gw=Math.max(0,VSCFG.lv-1)*6,c=L.combo;
+  const T=near?[['push',20],['back',15],['poke',15],['low',10],['throw',d<50?10:0],['parry',8],['sandan',c>=3?8:0],['guardW',gw],['up',5]]
+    :mid?[['arrow',22],['ground',12],['walkB',14],['back',10],['heavy',8],['wait',12],['check',c>=4?6:0],['up',6],['guardW',gw/2]]
+    :[['arrow',30],['heavy',12],['ground',10],['arc',8],['piece',6],['wait',20],['walkB',6]];
+  let tot2=0;for(const t of T)tot2+=t[1];let r=Math.random()*tot2,pick='wait';for(const t of T){if((r-=t[1])<0){pick=t[0];break}}
+  const dur=L.act[0]+Math.random()*(L.act[1]-L.act[0]);ai.actEnd=frameNo+dur;const f2=g=>{ai.follow={g,until:frameNo+60}};
+  switch(pick){
+    case 'arrow':setStick(-1);press('L','f','F');if(c>=2)f2(c>=4&&Math.random()<.4?['H','h','D']:['H','h','F']);ai.act=()=>{};break;
+    case 'heavy':setStick(-1);press('H','f','F');if(c>=3)f2(['H','h','F']);ai.act=()=>{};break;
+    case 'ground':setStick(-1);press('L','f','D');ai.act=()=>{};break;
+    case 'arc':setStick(-1);press('L','h','U');ai.act=()=>{};break;
+    case 'piece':setStick(-1);press('L','h','F');ai.act=()=>{};break;
+    case 'check':setStick(-1);press('L','f','F');ai.pend.push(G_('H','h','D'));ai.act=()=>{};break;
+    case 'up':setStick(-1);press('H','f','U');ai.act=()=>{};break;
+    case 'push':setStick(-1);press('L','h','B');ai.act=()=>{};break;
+    case 'back':setStick(-1);request({kind:'sflick',dir:-1});ai.actEnd=frameNo+24;ai.act=()=>setStick(-1);break;
+    case 'walkB':ai.act=()=>setStick(4);break;
+    case 'poke':setStick(-1);press('L','t');ai.act=()=>{};break;
+    case 'low':setStick(-1);press('L','h','D');ai.act=()=>{};break;
+    case 'throw':setStick(0);press('H','t');ai.act=()=>setStick(-1);ai.actEnd=frameNo+20;break;
+    case 'parry':setStick(-1);press('H','h','B');ai.act=()=>{};break;
+    case 'sandan':setStick(-1);press('L','f','B');ai.pend.push(G_('H','h','F'));ai.act=()=>{};break;
+    case 'guardW':{const gs=Math.random()<L.glow*0.6?5:4;ai.act=()=>setStick(gs)}ai.actEnd=frameNo+dur*0.7;break;
+    default:ai.act=()=>setStick(-1)}}
+
 // ================= 1対1：絵 =================
 const RECOL=new Map();
-function recol(img){let r=RECOL.get(img);if(r)return r;const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);
-  try{const d=x.getImageData(0,0,c.width,c.height),a=d.data;   // 2P の色ちがい：あざやかな色（ライム・黄）だけ色相を回す（tech-notes 6-1 のお願い3 の仮）
-    for(let i=0;i<a.length;i+=4){if(!a[i+3])continue;const R=a[i]/255,G=a[i+1]/255,B=a[i+2]/255,mx=Math.max(R,G,B),mn=Math.min(R,G,B),dd=mx-mn;if(dd<0.18)continue;
-      let h=mx===R?((G-B)/dd)%6:mx===G?(B-R)/dd+2:(R-G)/dd+4;h=(h*60+360)%360;const l=(mx+mn)/2,sat=dd/(1-Math.abs(2*l-1)||1);
-      if(h<35||h>320)continue;   // 肌・髪のピンクはそのまま
-      h=(h+165)%360;const C2=(1-Math.abs(2*l-1))*sat,X=C2*(1-Math.abs((h/60)%2-1)),m=l-C2/2;let r1=0,g1=0,b1=0;
-      if(h<60){r1=C2;g1=X}else if(h<120){r1=X;g1=C2}else if(h<180){g1=C2;b1=X}else if(h<240){g1=X;b1=C2}else if(h<300){r1=X;b1=C2}else{r1=C2;b1=X}
-      a[i]=(r1+m)*255;a[i+1]=(g1+m)*255;a[i+2]=(b1+m)*255}
+function recol(img,v){v=v||'YUKI2';let M=RECOL.get(v);if(!M){M=new Map();RECOL.set(v,M)}let r=M.get(img);if(r)return r;
+  const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);
+  const toRGB=(h,sat,l)=>{const C2=(1-Math.abs(2*l-1))*sat,X=C2*(1-Math.abs((h/60)%2-1)),m=l-C2/2;let r1=0,g1=0,b1=0;
+    if(h<60){r1=C2;g1=X}else if(h<120){r1=X;g1=C2}else if(h<180){g1=C2;b1=X}else if(h<240){g1=X;b1=C2}else if(h<300){r1=X;b1=C2}else{r1=C2;b1=X}return [(r1+m)*255,(g1+m)*255,(b1+m)*255]};
+  try{const d=x.getImageData(0,0,c.width,c.height),a=d.data;
+    // YUKI2：あざやかな色（ライム・黄）だけ色相を回す（2P の色ちがい・tech-notes 6-1 のお願い3 の仮）
+    // RIN／RIN2：RIN の絵がまだないので、YUKI の絵を紫・暗い色にした「仮の絵」（キャラの見た目ではない。グラフィック班の絵が来たら差し替え）
+    for(let i=0;i<a.length;i+=4){if(!a[i+3])continue;const R=a[i]/255,G=a[i+1]/255,B=a[i+2]/255,mx=Math.max(R,G,B),mn=Math.min(R,G,B),dd=mx-mn,l=(mx+mn)/2;
+      let h=dd?(mx===R?((G-B)/dd)%6:mx===G?(B-R)/dd+2:(R-G)/dd+4):0;h=(h*60+360)%360;const sat=dd?dd/(1-Math.abs(2*l-1)||1):0,skin=(h<35||h>320)&&dd>=0.12&&l>0.45;
+      if(v==='YUKI2'){if(dd<0.18||h<35||h>320)continue;const o=toRGB((h+165)%360,sat,l);a[i]=o[0];a[i+1]=o[1];a[i+2]=o[2];continue}
+      if(skin)continue;const hu=v==='RIN2'?175:272;
+      if(dd>=0.18){const o=toRGB(hu,Math.min(1,sat*0.9),l*0.8);a[i]=o[0];a[i+1]=o[1];a[i+2]=o[2]}
+      else{const o=toRGB(hu,0.35,Math.max(0.05,l*0.38));a[i]=o[0];a[i+1]=o[1];a[i+2]=o[2]}}
     x.putImageData(d,0,0)}catch(e){}
-  RECOL.set(img,c);return c}
+  M.set(img,c);return c}
 function poseFor(f){const o=F[1-f.side];
   if(ICH){if(f.side===ICH.side)return ICH.pz;return ICH.t>180?['down','down']:['hit_hi','hit']}
   const M=MATCH;if(M&&(M.phase==='ko'||M.phase==='end')&&M.last&&M.last.w===f.side&&!isVict(f)&&['idle','walk','guard','crouch'].includes(f.st))return ['win','idle'];
@@ -1090,7 +1294,8 @@ function poseFor(f){const o=F[1-f.side];
     if(f.st==='down')return [f.t>32?'getup':'down','down'];if(f.st==='tech')return ['tech','hit']}
   if(f.st==='block')return [f.crouchB?'block_low':'block','guard'];
   const sP=P,sE=E;P=f;E=o;let r;try{r=poseP()}finally{P=sP;E=sE}return r}
-function drawFighter(f){const pz=poseFor(f),fl=(f.side===1)!==!!(ICH&&ICH.side===f.side&&ICH.flip),ch=f.side?'YUKI2':'YUKI',c=ctxM;
+const chVar=f=>f.ch==='RIN'?(f.side===1&&F[0].ch==='RIN'?'RIN2':'RIN'):(f.side===1&&F[0].ch==='YUKI'?'YUKI2':'YUKI');
+function drawFighter(f){const pz=poseFor(f),fl=(f.side===1)!==!!(ICH&&ICH.side===f.side&&ICH.flip),ch=chVar(f),c=ctxM;
   const wht=(isVict(f)&&freeze>0&&(frameNo&2))||(f.st==='atk'&&f.mv&&f.mv.parry&&f.t>f.mv.su&&(frameNo&4));
   const tf={rot:0,sx:1,sy:1,dx:0,dy:0,cy:0};if(freeze>0&&isVict(f))tf.dx=(frameNo&1?1:-1)*0.6;
   drawChar(ch,f,pz,fl,ICH?1:(f.inv&&f.st!=='atk'&&!isVict(f)?0.6:1),wht,tf);
@@ -1170,8 +1375,8 @@ function poseE(){
 let DOT=2,DOT0=2,ZP=6,ZP0=6,VIEWW0=180,OX=0,OY=0;
 function getImg(ch,pz){const set=POSE7[ch];const pe=(set[pz[0]]&&set[pz[0]].img)?set[pz[0]]:(set[pz[1]]&&set[pz[1]].img?set[pz[1]]:set.idle);return pe&&pe.img?pe:null}
 function drawChar(ch,o,pz,flip,alpha,white,tf){
-  const pe=getImg(ch==='YUKI2'?'YUKI':ch,pz);if(!pe)return;
-  let img=pe.img;if(white&&WHITE.get(img))img=WHITE.get(img);else if(ch==='YUKI2')img=recol(img);
+  const vv=ch==='YUKI2'||ch==='RIN'||ch==='RIN2';const pe=getImg(vv?'YUKI':ch,pz);if(!pe)return;
+  let img=pe.img;if(white&&WHITE.get(img))img=WHITE.get(img);else if(vv)img=recol(img,ch);
   const c=ctxM,w=img.width,h=img.height,snap=v=>Math.round(v/DOT)*DOT;
   const px=snap(OX+o.x*ZP-(flip?(w-pe.ax):pe.ax)*DOT),py=snap(OY+o.y*ZP-pe.ay*DOT);
   c.globalAlpha=alpha;
@@ -1256,6 +1461,7 @@ function renderWorld(){
   c.globalCompositeOperation='lighter';
   for(const r of rings){const a=r.t/20;c.strokeStyle=r.c;c.globalAlpha=a;c.lineWidth=2;c.beginPath();c.arc(r.x,r.y,20+(20-r.t)*4,0,7);c.stroke()}c.globalAlpha=1;
   c.setTransform(1,0,0,1,0,0);
+  if(MODE==='vs')drawProj(c);
   for(const f of FXS){const nm=f.n>1?f.name+'_0'+Math.min(f.n,1+Math.floor(f.t/f.per)):f.name,o=FXD[nm];if(!o||!o.img)continue;
     const a=f.n>1?1:f.name==='slash_big'?Math.min(1,(f.life-f.t)/10):1-f.t/f.life,sc=f.big*(f.name==='ring_01'||f.name==='impact_ring'?(0.7+0.5*f.t/f.life):1),w=o.w*DOT*sc,h=o.h*DOT*sc,X=OX+(f.x+(FXV[f.name]||0)*f.t*f.dir)*ZP,Y=OY+f.y*ZP;
     c.globalCompositeOperation=o.blend==='add'?'lighter':'source-over';c.globalAlpha=Math.max(0,a);
@@ -1290,7 +1496,7 @@ function render(){
   if(MODE==='vs'){if(IMG.face_y){ctx.save();ctx.translate(LW-4,4);ctx.scale(-1,1);try{ctx.filter='hue-rotate(165deg)'}catch(e){}ctx.drawImage(IMG.face_y,0,0,36,36);ctx.filter='none';ctx.restore()}}
   else if(IMG.face_n){ctx.save();ctx.translate(LW-4,4);ctx.scale(-1,1);ctx.drawImage(IMG.face_n,0,0,36,36);ctx.restore()}
   ctx.lineWidth=1.5;ctx.strokeStyle=C.lime;ctx.strokeRect(4,4,36,36);ctx.strokeStyle=C.crim;ctx.strokeRect(LW-40,4,36,36);ctx.lineWidth=1;
-  txt('YUKI',46,4,'800 11px '+UI,C.lime);txt(MODE==='vs'?'YUKI（CPU '+VSCFG.lv+' '+CPUNM[VSCFG.lv]+'）':'NANA',LW-46,4,'800 11px '+UI,C.crim,'right');
+  txt(MODE==='vs'?F[0].ch+(F[0].ch==='RIN'?'（仮の絵）':''):'YUKI',46,4,'800 11px '+UI,C.lime);txt(MODE==='vs'?F[1].ch+(F[1].ch==='RIN'?'（仮の絵）':'')+'（CPU '+VSCFG.lv+' '+CPUNM[VSCFG.lv]+'）':'NANA',LW-46,4,'800 11px '+UI,C.crim,'right');
   const hw=Math.min(300,LW*0.4-50);bar(46,18,hw,10,P.hp/1000,C.lime);bar(LW-46-hw,18,hw,10,E.hp/1000,C.crim,true);
   const spMax=P.sp>=100;bar(46,32,92,5,P.sp/100,spMax?((frameNo>>3)&1?C.mint:C.lime):'#3d8f86');txt(spMax?'SP MAX':'SP',142,29,'700 9px '+UI,spMax?C.mint:C.dim);
   [15,50].forEach(v=>{ctx.fillStyle='rgba(5,7,12,.9)';ctx.fillRect(46+92*v/100,32,1,5)});
@@ -1313,9 +1519,9 @@ function render(){
     if(IMG.face_csup){otxt('白猫の護り',0,0,'italic 900 30px '+UI,'#fff');otxt('YUKI　超必殺',0,24,'800 11px '+UI,C.lime)}else{txt('白猫の護り',30,-2,'900 30px '+UI,C.bg,'center','middle');txt('YUKI　超必殺',30,24,'700 11px '+UI,C.bg,'center','middle')}ctx.restore();ctx.globalAlpha=1}
   if(ICH){const T=ICH.t;
     if(T>=6&&T<72){const k=Math.min(1,(T-6)/8)*Math.min(1,(72-T)/8),h=Math.min(LH*0.6,LW/3),w=h*3,sx=(1-Math.min(1,(T-6)/10))*LW*0.6-(T>64?(T-64)/8*LW*0.6:0);   // カットイン（横切る帯）
-      ctx.fillStyle='rgba(0,0,0,'+(0.5*k)+')';ctx.fillRect(0,0,LW,LH);ctx.globalAlpha=k;if(IMG.face_cich)ctx.drawImage(IMG.face_cich,LW/2-w/2+sx,LH*0.5-h/2,w,h);ctx.globalAlpha=1}
-    if(T>=216&&T<300){const k=Math.min(1,(T-216)/6)*Math.min(1,(300-T)/10),sc=1+Math.max(0,(222-T)/6)*0.6;ctx.globalAlpha=k;ctx.save();ctx.translate(LW/2,LH*0.42);ctx.scale(sc,sc);otxt('一撃必殺',0,0,'italic 900 54px '+UI,'#fff','center','middle',8);otxt('白猫終閃',0,44,'800 18px '+UI,C.mint,'center','middle',5);ctx.restore();ctx.globalAlpha=1}
-    if(T>=288){const k=Math.min(1,(T-288)/6),sc=1+Math.max(0,(294-T)/6);ctx.globalAlpha=k;ctx.save();ctx.translate(LW/2,LH*0.45);ctx.scale(sc,sc);otxt('K.O.',0,0,'italic 900 72px '+UI,C.crim,'center','middle',9);ctx.restore();if(T>=304&&MODE!=='vs')otxt('YUKI WIN',LW/2,LH*0.66,'italic 900 26px '+UI,C.lime,'center','middle',6);ctx.globalAlpha=1}}
+      ctx.fillStyle='rgba(0,0,0,'+(0.5*k)+')';ctx.fillRect(0,0,LW,LH);ctx.globalAlpha=k;if(ICH.ch==='RIN'){ctx.fillStyle='rgba(120,70,200,.9)';ctx.fillRect(sx,LH*0.4,LW,LH*0.2);otxt('RIN',LW/2+sx,LH*0.5,'italic 900 40px '+UI,C.gold)}else if(IMG.face_cich)ctx.drawImage(IMG.face_cich,LW/2-w/2+sx,LH*0.5-h/2,w,h);ctx.globalAlpha=1}
+    if(T>=216&&T<300){const k=Math.min(1,(T-216)/6)*Math.min(1,(300-T)/10),sc=1+Math.max(0,(222-T)/6)*0.6;ctx.globalAlpha=k;ctx.save();ctx.translate(LW/2,LH*0.42);ctx.scale(sc,sc);otxt('一撃必殺',0,0,'italic 900 54px '+UI,'#fff','center','middle',8);otxt(ICH.nm,0,44,'800 18px '+UI,C.mint,'center','middle',5);ctx.restore();ctx.globalAlpha=1}
+    if(T>=288){const k=Math.min(1,(T-288)/6),sc=1+Math.max(0,(294-T)/6);ctx.globalAlpha=k;ctx.save();ctx.translate(LW/2,LH*0.45);ctx.scale(sc,sc);otxt('K.O.',0,0,'italic 900 72px '+UI,C.crim,'center','middle',9);ctx.restore();if(T>=304&&MODE!=='vs')otxt((ICH.ch||'YUKI')+' WIN',LW/2,LH*0.66,'italic 900 26px '+UI,C.lime,'center','middle',6);ctx.globalAlpha=1}}
   if(ichi>0){const k=Math.min(1,(60-ichi)/10)*Math.min(1,ichi/8);ctx.fillStyle='rgba(0,0,0,'+(0.7*k)+')';ctx.fillRect(0,0,LW,LH);
     if(IMG.face_cich){const h=Math.min(LH*0.6,LW/3),w=h*3;ctx.globalAlpha=k;ctx.drawImage(IMG.face_cich,LW/2-w/2,LH*0.5-h/2,w,h)}else{ctx.fillStyle='rgba(224,48,74,'+(0.9*k)+')';ctx.fillRect(0,LH*0.38,LW,LH*0.24);ctx.globalAlpha=k;if(IMG.face_y)ctx.drawImage(IMG.face_y,LW/2-230,LH*0.38+6,74,74)}
     const iy=IMG.face_cich?LH*0.32:0;otxt('一撃必殺',LW/2+20,LH*0.47+iy,'italic 900 42px '+UI,'#fff');otxt('白猫終閃',LW/2+20,LH*0.56+iy,'800 14px '+UI,'#fff');ctx.globalAlpha=1}
@@ -1512,16 +1718,18 @@ function closeMenu(){mn.hidden=true;resize()}
 function buildMenu(res){let h='';
   if(res)h+='<div class="res" style="color:'+(res.win?'var(--lime)':res.t==='DRAW'?'var(--fg)':'var(--crim)')+'">'+res.t+'</div><div class="note" style="text-align:center">'+res.d+'</div>';
   else h+='<h1>スマファイト<small>'+VER+'　1対1の試作（VS CPU）</small></h1>';
-  h+='<h2>あなた</h2><div class="seg"><button aria-pressed="true">YUKI</button><button disabled>2キャラ目（準備中）</button></div>';
-  h+='<h2>あいて（CPU）</h2><div class="seg"><button aria-pressed="true">YUKI（色ちがい）</button><button disabled>2キャラ目（準備中）</button></div>';
+  const cb=(w,c,l)=>'<button data-w="'+w+'" data-c="'+c+'" aria-pressed="'+(VSCFG[w]===c)+'">'+l+'</button>';
+  h+='<h2>あなた</h2><div class="seg">'+cb('me','YUKI','YUKI')+cb('me','RIN','RIN（弓・仮の絵）')+'</div>';
+  h+='<h2>あいて（CPU）</h2><div class="seg">'+cb('op','YUKI','YUKI')+cb('op','RIN','RIN（弓・仮の絵）')+'</div>';
   h+='<h2>CPU の強さ</h2><div class="seg">'+[1,2,3,4,5].map(i=>'<button data-lv="'+i+'" aria-pressed="'+(VSCFG.lv===i)+'">'+i+' '+CPUNM[i]+'</button>').join('')+'</div>';
   h+='<div class="seg" style="margin-top:6px"><button class="go" id="mngo">'+(res?'もう一回':'VS CPU を始める')+'</button><button class="sub" id="mnpr">技の練習</button></div>';
   if(MODE==='vs'&&!res&&MATCH&&MATCH.phase!=='end')h+='<div class="seg"><button class="sub" id="mnback">試合にもどる</button></div>';
-  h+='<div class="note">2本先取・1ラウンド45秒（rules 5章）。CPU は人と同じ技・同じ決まりで動き、見えた動きに少し遅れて反応する（smafight-cpu.md）。⚙ の設定はどちらでも使える。</div>';
+  h+='<div class="note">2本先取・1ラウンド45秒（rules 5章）。RIN は弓の矢で戦う（rin-moveset v1）。RIN の絵はまだないので、YUKI の絵の色を変えた仮の絵。CPU は人と同じ技・同じ決まりで動き、見えた動きに少し遅れて反応する（smafight-cpu.md）。⚙ の設定はどちらでも使える。</div>';
   mnin.innerHTML=h;
+  mnin.querySelectorAll('button[data-w]').forEach(b=>b.onclick=()=>{VSCFG[b.dataset.w]=b.dataset.c;mnin.querySelectorAll('button[data-w="'+b.dataset.w+'"]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
   mnin.querySelectorAll('button[data-lv]').forEach(b=>b.onclick=()=>{VSCFG.lv=+b.dataset.lv;mnin.querySelectorAll('button[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
   document.getElementById('mngo').onclick=()=>{closeMenu();vsStart()};
-  document.getElementById('mnpr').onclick=()=>{closeMenu();MODE='practice';MATCH=null;F=[null,null];CUR=0;MIRC=false;reset()};
+  document.getElementById('mnpr').onclick=()=>{closeMenu();MODE='practice';MATCH=null;F=[null,null];CUR=0;MIRC=false;PROJ=[];setChar('YUKI');reset()};
   const bk=document.getElementById('mnback');if(bk)bk.onclick=closeMenu}
 function openOv(){buildOv();ov.hidden=false}
 function closeOv(){ov.hidden=true;saveCfg();resize()}
@@ -1583,7 +1791,7 @@ function goFull(){
 function fieldTap(p){for(const b of FBTN)if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h){b.fn();return}}
 
 // QA・自動テスト用
-window.SF={get F(){return F},get MATCH(){return MATCH},get MODE(){return MODE},vsStart,VSCFG,CPUL,openMenu,closeMenu,get ICH(){return ICH},ichDemo,NT,cmdNext,get slow(){return slow},get neg(){return neg},get ichiDark(){return ichiDark},ver:VER,cfg:CFG,stats:ST,hist:HIST,get P(){return P},get E(){return E},get BL(){return BL},get BH(){return BH},CMDS,GRID,MV,CMDH,get frame(){return frameNo},poseP:()=>poseP(),get CHK(){return CHK},startCheck:()=>chkStart(),skip:()=>chkSkip(),get combo(){return combo},get comboDmg(){return comboDmg},
+window.SF={get PROJ(){return PROJ},spawnPJ,asSide,request,get F(){return F},get MATCH(){return MATCH},get MODE(){return MODE},vsStart,VSCFG,CPUL,openMenu,closeMenu,get ICH(){return ICH},ichDemo,NT,cmdNext,get slow(){return slow},get neg(){return neg},get ichiDark(){return ichiDark},ver:VER,cfg:CFG,stats:ST,hist:HIST,get P(){return P},get E(){return E},get BL(){return BL},get BH(){return BH},CMDS,GRID,MV,CMDH,get frame(){return frameNo},poseP:()=>poseP(),get CHK(){return CHK},startCheck:()=>chkStart(),skip:()=>chkSkip(),get combo(){return combo},get comboDmg(){return comboDmg},
   get FB(){return FB},get LH(){return LH},get DOT(){return DOT0},get S(){return S},get task(){return task},startTask:()=>{startTask();reset()},reset,input:a=>inQ.push(a),POSE7,MOTION};
 
 resize();reset();buildMenu();requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame)});
