@@ -71,7 +71,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v2.0';
+const VER='v2.1';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -97,7 +97,7 @@ const STATEPOSE={walkF:['walk_f','idle'],walkB:['walk_b','idle'],crouch:['crouch
 // ================= 設定（moveset v2 1章＋虎雪 16:00「フリックとホールドからのスワイプに分ける」） =================
 const DEF={ui:'game',fx:true,hbox:false,hand:'R',easy:false,nexth:true,punch:true,capOn:true,dsz:'std',
   dz:12,follow:60,sflickD:35,sflickT:150,
-  tween:true,tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,cmdT:120,cmdTol:60,nekoAlt:false,ilog:true,jabEnd:12,repStun:35,repDmg:25,throwD:50,lowfx:false,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:600,cmdBuf:24,
+  tween:true,tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,cmdT:120,cmdTol:60,nekoAlt:false,ilog:true,jabEnd:12,repStun:35,repDmg:25,jgF:6,jgStun:16,jgLock:20,bstDmg:30,bstRec:12,throwD:50,lowfx:false,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:600,cmdBuf:24,
   cancelF:12,justF:4,parryF:8,buf:8,scale10:60,scaleMin:30,jcap:25,
   bsize:100,bx:0,by:0,stopx:100,
   dummy:'stand',nodmg:true,eburst:false,spinf:false,start:'mid',vib:true,snd:true};
@@ -682,8 +682,10 @@ function doSFlick(a){
 function doBurst(){
   if(MODE==='vs'){if(!P.vict||!canBurst())return;P.vict=false;E.vict=true;E.mv=null;E.queued=null}
   P.burstUsed=true;P.sp-=50;P.st='burst';P.t=0;P.stun=0;P.inv=1;ST.burst++;
-  E.st='stun';E.stun=34;E.vx=6;E.atk=null;flash=10;flashC='rgba(95,242,224,';bigText('BURST',C.mint);SE.burst();vib(30);shake=6;
-  rings.push({x:P.x,y:P.y-55,t:18,c:C.mint});hist('バースト',true);gRec('バースト',true);
+  if(MODE==='vs'){asSide(E.side,()=>endCombo(true));if(Math.abs(E.x-P.x)<160){E.hp=Math.max(1,E.hp-CFG.bstDmg);E.st='juggle';E.vy=-5;E.vx=6;E.airT=0;E.bounced=true}}   // 抜け技（3-7）：全方位の衝撃波・ダメージ 30
+  else{E.st='stun';E.stun=34;E.vx=6;E.atk=null}
+  flash=10;flashC='rgba(95,242,224,';bigText('BURST',C.mint);SE.burst();vib(30);shake=8;
+  rings.push({x:P.x,y:P.y-55,t:18,c:C.mint});rings.push({x:P.x,y:P.y-55,t:26,c:'#fff'});hist('バースト',true);gRec('バースト',true);
 }
 const NT=[];   // 動かさないホールド（N）の履歴（一撃必殺だけに使う。コマンドの履歴には入れない）
 function doTok(a){
@@ -860,7 +862,7 @@ function eHitsP(dmg){
     nekoStrike(m0,m0.dmg||130,true);
     if(P.tParry){P.tParry=false;taskTry('parry',true)}
     return}
-  if(P.inv||(P.st==='atk'&&m0.inv&&P.t<=m0.inv)||P.st==='burst'||P.st==='duck'||(P.st==='back'&&P.t<=W.backInv)){pop('すり抜け',P,'#5ff2e0');return}
+  if(P.inv||(P.st==='atk'&&m0.inv&&P.t<=m0.inv)||(P.st==='burst'&&P.t<20)||P.st==='duck'||(P.st==='back'&&P.t<=W.backInv)){pop('すり抜け',P,'#5ff2e0');return}
   const v=stickVec(),guard=(groundFree()||P.st==='crouch')&&sBack(v.s)&&v.s!==3;
   if(guard){P.st='block';P.stun=12;SE.block();pop('ガード',P,C.mint);freeze=4;P.sp=Math.min(100,P.sp+2);return}
   P.st='stun';P.stun=24;P.hp=Math.max(0,P.hp-dmg);if(P.hp<=0)P.hp=1000;P.queued=null;P.relKey=null;P.sp=Math.min(100,P.sp+6);P.vy=P.y<0?-2:0;
@@ -914,7 +916,7 @@ function updateP(){
   case 'stun':case 'block':
     if(P.y<0){airPhys(GRAV)}else{P.x-=0.8}
     if(--P.stun<=0&&P.y===0)P.st='idle';break;
-  case 'burst':if(++P.t>=20){P.st=P.y<0?'jump':'idle';P.inv=0}break;
+  case 'burst':if(++P.t===20)P.inv=0;if(P.t>=20+(MODE==='vs'?CFG.bstRec:0))P.st=P.y<0?'jump':'idle';break;   // 20F 無敵＋自分のスキ
   case 'land':if(--P.t<=0)P.st='idle';break;
   case 'jsq':{ // 踏み切り（4F）。向きは踏み切り終わりのスティックで決める（斜めが少しずれても前・後ろに跳べる）
     P.t--;if(v.s>=0&&v.x>CFG.dz)P.jdir=1;else if(v.s>=0&&v.x<-CFG.dz)P.jdir=-1;
@@ -1117,9 +1119,13 @@ function vsDefend(m,opt,wasCombo){
     asSide(E.side,()=>{SE.parry();vib([20,30,20]);pop('矢を取った',P,C.lime,16);bigText('CATCH',C.lime);P.sp=Math.min(100,P.sp+10);freeze=Math.max(freeze,10);flash=6;flashC='rgba(198,255,61,';rings.push({x:P.x+20,y:P.y-60,t:20,c:C.lime});ST.catch=(ST.catch||0)+1});return true}
   if(E.st==='atk'&&E.mv&&E.mv.parry&&!m.thr&&!opt.proj&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)){   // 受け流し・当て身返し（受けた側の技）
     P.hitDone=true;asSide(E.side,()=>{eHitsP(0);if(E.st==='stun')E.vict=true});return true}
-  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||E.st==='burst'||E.st==='duck'||(E.st==='back'&&E.t<=W.backInv)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
+  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||(E.st==='burst'&&E.t<20)||E.st==='duck'||(E.st==='back'&&E.t<=W.backInv)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
   if(m.thr){const tech=E.cpu?Math.random()<CPUL[VSCFG.lv].tech:(E.lastHt!==undefined&&frameNo-E.lastHt<=8);   // 投げ抜け：投げられてから 6F 以内に【強】タップ（rules 2-2）
     if(tech){P.hitDone=true;E.x+=26;P.x-=8;E.st='block';E.stun=14;SE.block();pop('投げ抜け',E,C.mint);bigText('投げ抜け',C.mint);return true}}
+  if(!wasCombo&&!opt.proj&&!m.thr&&!m.ichi&&E.y===0&&E.bkT!==undefined&&frameNo-E.bkT<=CFG.jgF&&['idle','walk','crouch','guard','block','land'].includes(E.st)){   // ジャストガード（3-6）：近接技だけ
+    P.hitDone=true;P.st='stun';P.stun=CFG.jgStun;P.mv=null;P.queued=null;P.vict=true;E.st='idle';E.t=0;E.sp=Math.min(100,E.sp+5);E.bkT=undefined;
+    freeze=Math.max(freeze,8);flash=8;flashC='rgba(255,255,255,';bigText('JUST',C.mint);SE.parry();vib([15,20,15]);rings.push({x:E.x,y:E.y-60,t:16,c:'#fff'});pop('ジャストガード',E,C.mint,14);ST.jg=(ST.jg||0)+1;return true}
+  ST.lastBk=E.bkT===undefined?null:frameNo-E.bkT;
   if(!wasCombo&&!m.thr&&E.y===0&&['idle','walk','crouch','guard','block','land'].includes(E.st)){   // ガード：後ろ（下段は しゃがみガード、空中の技・跳び膝は 立ちガード）
     const s=stickOf(E).s,back=sBack(s)&&s!==3,low=s===5,oh=!!(m.air||m.key==='s_lh_u');
     if(back&&!(m.low&&!low)&&!(oh&&low)&&!m.gb){if(m.pushG)E.x+=60;E.st='block';E.stun=Math.round(10+(m.stop||3)*2+(m.sk?6:0));E.x+=m.sk?10:5;E.crouchB=low;
@@ -1168,12 +1174,13 @@ function vsStep(){
   else if(M.phase==='ko'&&M.pt>=170){vsNextRound();return}
   else if(M.phase==='end')return;
   for(let s=0;s<2;s++){const f=F[s];
-    asSide(s,()=>{
+    asSide(s,()=>{{const ss=stickOf(P).s,bk=ss>=4&&ss<=5;if(bk&&!P.bkPrev&&frameNo>=(P.bkLock||0)){P.bkT=frameNo;P.bkLock=frameNo+CFG.jgLock}P.bkPrev=bk}   // ジャストガード：後ろへ入れ始めた瞬間（3-6）
+
       if(P.kaku>0&&--P.kaku===0)pop('覚醒おわり',P,C.dim,13);
       if(P.pin>0)P.pin--;if(P.pinJ>0)P.pinJ--;
       if(endSoon>0&&--endSoon===0)endCombo();
       if(comboShow>0&&combo===0)comboShow--;if(lastCombo&&--lastCombo.t<=0)lastCombo=null;
-      if(P.cpu&&!P.dummy&&M.phase==='fight')cpuThink();if(P.dummy)P.ctl.stick=dummyStick();
+      if(P.cpu&&!P.dummy&&M.phase==='fight')cpuThink();if(P.dummy){P.ctl.stick=dummyStick();if(P.drill==='jg'&&!P.vict){const d=E.x-P.x;if(d>58)P.ctl.stick={x:30,y:0,s:0};else{P.ctl.stick={x:0,y:0,s:-1};if(['idle','walk'].includes(P.st)&&frameNo%80===0)request(G_(frameNo%240===0?'H':'L','t'))}}}   // ジャストガード練習：相手が一定の間で近接技
       if(P.queued&&!P.vict){P.qT--;const q=P.queued;
         const waiting=P.st==='atk'&&!P.hit&&P.t<=P.mv.su+P.mv.ac;
         const ok=P.st!=='chase'&&!waiting&&(groundFree()||airFree()||(P.st==='atk'&&(inCancel(P.mv)||P.t>P.mv.su+P.mv.ac&&(q.kind==='cmd'||q.wait)))||(P.st==='atk'&&P.t>=tot(P.mv)-1));
@@ -1372,7 +1379,7 @@ function drawAuraOf(f){const AU=FXD['aura_0'+(((frameNo/4)|0)%8+1)],c=ctxM;if(!(
   const fl=f.side===1,X=OX+f.x*ZP,Y=OY+f.y*ZP;if(fl){c.save();c.translate(Math.round(X/DOT)*DOT,0);c.scale(-1,1);c.drawImage(AU.img,-AU.cx*DOT,Math.round((Y-AU.cy*DOT)/DOT)*DOT,AU.w*DOT,AU.h*DOT);c.restore()}
   else c.drawImage(AU.img,Math.round((X-AU.cx*DOT)/DOT)*DOT,Math.round((Y-AU.cy*DOT)/DOT)*DOT,AU.w*DOT,AU.h*DOT);c.globalAlpha=1;c.globalCompositeOperation='source-over'}
 function vsHUD(hw){const M=MATCH;if(!M)return;
-  const espM=E.sp>=100;bar(LW-46-92,32,92,5,E.sp/100,espM?((frameNo>>3)&1?C.mint:C.lime):'#3d8f86',true);txt(espM?'SP MAX':'SP',LW-142,29,'700 9px '+UI,espM?C.mint:C.dim,'right');
+  const espM=E.sp>=100;bar(LW-46-92,32,92,5,E.sp/100,espM?((frameNo>>3)&1?C.mint:C.lime):'#3d8f86',true);ctx.fillStyle='#000';ctx.fillRect(LW-46-92+45,31,2,7);txt(espM?'SP MAX':'SP',LW-142,29,'700 9px '+UI,espM?C.mint:C.dim,'right');
   if(E.kaku>0){bar(LW-46-92,42,92,4,E.kaku/(CFG.kakuSec*60),(frameNo>>2)&1?C.gold:'#fff',true);txt('覚醒 '+(E.kaku/60).toFixed(1),LW-142,41,'800 9px '+UI,C.gold,'right')}
   otxt(String(Math.ceil(M.time/60)),LW/2,20,'900 22px '+UI,M.time<600?C.crim:C.fg);
   for(let i=0;i<2;i++){ctx.fillStyle=i<M.wins[0]?C.lime:'rgba(255,255,255,.2)';ctx.beginPath();ctx.arc(LW/2-24-i*12,40,4,0,7);ctx.fill();
@@ -1574,7 +1581,7 @@ function render(){
   ctx.lineWidth=1.5;ctx.strokeStyle=C.lime;ctx.strokeRect(4,4,36,36);ctx.strokeStyle=C.crim;ctx.strokeRect(LW-40,4,36,36);ctx.lineWidth=1;
   txt(MODE==='vs'?F[0].ch+(F[0].ch==='RIN'&&!POSE7.RIN?'（仮の絵）':''):'YUKI',46,4,'800 11px '+UI,C.lime);txt(MODE==='vs'?F[1].ch+(F[1].ch==='RIN'&&!POSE7.RIN?'（仮の絵）':'')+(PRAC()?'（練習の相手）':'（CPU '+VSCFG.lv+' '+CPUNM[VSCFG.lv]+'）'):'NANA',LW-46,4,'800 11px '+UI,C.crim,'right');
   const hw=Math.min(300,LW*0.4-50);bar(46,18,hw,10,P.hp/1000,C.lime);bar(LW-46-hw,18,hw,10,E.hp/1000,C.crim,true);
-  const spMax=P.sp>=100;bar(46,32,92,5,P.sp/100,spMax?((frameNo>>3)&1?C.mint:C.lime):'#3d8f86');txt(spMax?'SP MAX':'SP',142,29,'700 9px '+UI,spMax?C.mint:C.dim);
+  const spMax=P.sp>=100;bar(46,32,92,5,P.sp/100,spMax?((frameNo>>3)&1?C.mint:C.lime):'#3d8f86');ctx.fillStyle='#000';ctx.fillRect(46+45,31,2,7);txt(spMax?'SP MAX':'SP',142,29,'700 9px '+UI,spMax?C.mint:C.dim);
   [15,50].forEach(v=>{ctx.fillStyle='rgba(5,7,12,.9)';ctx.fillRect(46+92*v/100,32,1,5)});
   if(P.burstUsed)txt('BURST済',142,40,'700 8px '+UI,C.dim);
   if(P.kaku>0){bar(46,42,92,4,P.kaku/(CFG.kakuSec*60),(frameNo>>2)&1?C.gold:'#fff');txt('覚醒 '+(P.kaku/60).toFixed(1),142,41,'800 9px '+UI,C.gold)}
@@ -1611,6 +1618,7 @@ function render(){
   const btn=(label,x,w,fn,on,yy)=>{const b={x,y:yy||48,w,h:30,fn};FBTN.push(b);rr(b.x,b.y,b.w,b.h,6);ctx.fillStyle=on?C.lime:'rgba(20,24,33,.8)';ctx.fill();ctx.strokeStyle=on?C.lime:C.line;ctx.stroke();txt(label,b.x+w/2,b.y+16,'700 13px '+UI,on?C.bg:C.fg,'center','middle')};
   btn('⚙',LW-44,38,openOv);if(!isFull())btn('全画面',LW-112,62,goFull);
   btn('メニュー',MODE==='vs'&&!PRAC()?LW-216:LW-310,MODE==='vs'&&!PRAC()?96:86,()=>openMenu());
+  if(PRAC()&&!CHK&&!CMB)btn(F[1].drill==='jg'?'JG練習 中':'JG練習',LW-310,86,()=>{F[1].drill=F[1].drill==='jg'?null:'jg';resetAny();if(F[1].drill)toast={s:'相手の攻撃に合わせて、左手を後ろへ入れ始める＝JUST',t:150}},F[1].drill==='jg',86);
   if(PRAC()&&!CHK&&!CMB)btn('コンボ練習',LW-216,96,()=>{cmbStart()},false,86);
   if(CMB){btn('とばす',8,70,()=>{CMB.i++;CMB.idx=0;CMB.msg='';resetAny()},false,52);btn('やめる',84,70,()=>{CMB=null;resetAny()},false,52)}
   if((MODE!=='vs'||PRAC())&&!CHK&&!task&&!CMB)btn('技チェック',LW-216,96,()=>{chkStart()});
@@ -1778,6 +1786,10 @@ const UIDEF=[
   {k:'kakuSec',l:'覚醒：続く時間',min:4,max:20,u:'秒'},
   {k:'kakuSP',l:'覚醒：使うSP',min:0,max:100,st:5,u:''},
   {k:'dtol',l:'向きのゆるさ',min:20,max:45,u:'°',n:'45°＝ずれても必ずどれかの向きになる。'},
+  {k:'jgF',l:'ジャストガードの受付',min:2,max:12,st:1,u:'F',n:'control-brief 3-6 ★6F。近接技が当たる直前のこのフレーム数の間に、左手を後ろへ入れ始めると成立。'},
+  {k:'jgStun',l:'ジャストガード：相手のスキ',min:8,max:30,st:1,u:'F',n:'★16F。'},
+  {k:'jgLock',l:'ジャストガード：入れ直しの止め',min:0,max:40,st:1,u:'F',n:'★20F。後ろを入れたあと、この間は次の受付を見ない（ガチャ入れ防止）。'},
+  {k:'bstRec',l:'抜け技（バースト）：自分のスキ',min:0,max:40,st:1,u:'F',n:'★12F（無敵 20F のあと）。'},
   {k:'jabEnd',l:'弱コンボの締めの後のスキ',min:0,max:30,st:1,u:'F',n:'v2.0a 仮（虎雪 13:12）。弱の連打の最後の技の戻りに足す。'},
   {k:'repStun',l:'同じ技の繰り返し：やられを減らす',min:0,max:80,st:5,u:'%',n:'1つのコンボで同じ技（弱の連打は1セット）を2回目に使うと、相手のやられの長さをこの割合ずつ減らす（つながりにくくなる）。'},
   {k:'repDmg',l:'同じ技の繰り返し：威力を減らす',min:0,max:60,st:5,u:'%',n:'同じく、2回目からの威力をこの割合ずつ減らす。'},
@@ -1913,7 +1925,7 @@ function batch(o){   // CPU 同士を何戦も回す：o={me,op,lv,lv2,n,style0,
       out.games.push({wins:w.slice(),res:MATCH.res.map(r=>r.w+':'+r.how),hp:F.map(f=>f.hp),frames:k})}}
   finally{performance.now=pn;Object.assign(VSCFG,keep);mn.hidden=true}
   return out}
-window.SF={batch,applyBal,cmbStart,get CMB(){return CMB},get PROJ(){return PROJ},spawnPJ,pracStart,asSide,request,get F(){return F},get MATCH(){return MATCH},get MODE(){return MODE},vsStart,VSCFG,CPUL,openMenu,closeMenu,get ICH(){return ICH},ichDemo,NT,cmdNext,get slow(){return slow},get neg(){return neg},get ichiDark(){return ichiDark},ver:VER,cfg:CFG,stats:ST,hist:HIST,get P(){return P},get E(){return E},get BL(){return BL},get BH(){return BH},get CMDS(){return CMDS},get GRID(){return GRID},MV,CMDH,get frame(){return frameNo},poseP:()=>poseP(),get CHK(){return CHK},startCheck:()=>chkStart(),skip:()=>chkSkip(),get combo(){return combo},get comboDmg(){return comboDmg},
+window.SF={batch,get toast(){return toast},applyBal,cmbStart,get CMB(){return CMB},get PROJ(){return PROJ},spawnPJ,pracStart,asSide,request,get F(){return F},get MATCH(){return MATCH},get MODE(){return MODE},vsStart,VSCFG,CPUL,openMenu,closeMenu,get ICH(){return ICH},ichDemo,NT,cmdNext,get slow(){return slow},get neg(){return neg},get ichiDark(){return ichiDark},ver:VER,cfg:CFG,stats:ST,hist:HIST,get P(){return P},get E(){return E},get BL(){return BL},get BH(){return BH},get CMDS(){return CMDS},get GRID(){return GRID},MV,CMDH,get frame(){return frameNo},poseP:()=>poseP(),get CHK(){return CHK},startCheck:()=>chkStart(),skip:()=>chkSkip(),get combo(){return combo},get comboDmg(){return comboDmg},
   get FB(){return FB},get LH(){return LH},get DOT(){return DOT0},get S(){return S},get task(){return task},startTask:()=>{startTask();reset()},reset:()=>resetAny(),input:a=>inQ.push(a),POSE7,MOTION};
 
 resize();reset();buildMenu();requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame)});
