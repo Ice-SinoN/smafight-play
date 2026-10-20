@@ -71,7 +71,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v1.6';
+const VER='v1.7';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -97,7 +97,7 @@ const STATEPOSE={walkF:['walk_f','idle'],walkB:['walk_b','idle'],crouch:['crouch
 // ================= 設定（moveset v2 1章＋虎雪 16:00「フリックとホールドからのスワイプに分ける」） =================
 const DEF={ui:'game',fx:true,hbox:false,hand:'R',easy:false,nexth:true,punch:true,capOn:true,dsz:'std',
   dz:12,follow:60,sflickD:35,sflickT:150,
-  tween:true,tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,cmdT:120,cmdTol:60,nekoAlt:false,throwD:50,lowfx:false,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:600,cmdBuf:24,
+  tween:true,tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,cmdT:120,cmdTol:60,nekoAlt:false,ilog:true,throwD:50,lowfx:false,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:600,cmdBuf:24,
   cancelF:12,justF:4,parryF:8,buf:8,scale10:60,scaleMin:30,jcap:25,
   bsize:100,bx:0,by:0,stopx:100,
   dummy:'stand',nodmg:true,eburst:false,spinf:false,start:'mid',vib:true,snd:true};
@@ -315,6 +315,28 @@ const GLBL={t:'タップ',f:'フリック',h:'ホールド→スワイプ'};
 // ================= 記録 =================
 const HIST=[];
 const ST={g:{},why:{},mis:{},edge:{},max:0,maxDmg:0,just:0,counter:0,bounce:0,wall:0,fin:0,burst:0,chase:0,parry:0,sup:0,tech:0};
+const ILOG=[];let IDIAG=null;   // v1.7：右手のしぐさの生の記録（B-003 実機の確認用）
+function ilog(g,t,res){if(MODE==='vs'&&P&&P.cpu)return;t=t||performance.now();const dx=g.x-g.x0,dy=g.y-g.y0,pv=ILOG[ILOG.length-1];
+  const e={t0:Math.round(g.t0),t1:Math.round(t),b:BNM[g.b.k],res,ang:Math.round(Math.atan2(-dy,dx)*180/Math.PI),dist:Math.round(Math.hypot(dx,dy)),dur:Math.round(t-g.t0),
+    hold:Math.round((g.armed?g.tArm:(g.mvT||t))-g.t0),need:Math.round(armT(g)),armed:!!g.armed,gap:pv?Math.round(g.t0-pv.t1):null,maxd:Math.round(g.maxd)};
+  ILOG.push(e);if(ILOG.length>60)ILOG.shift();cmdDiagUpd()}
+const RESN=r=>r[0]==='×'?r:r==='t'?'タップ':(r[0]==='f'?'フリック':'ホールド')+DIRK[r[1]];
+function cmdDiagUpd(){   // 技チェックのお題がコマンドなら、どの手で外れたかを出す
+  const c0=CHK&&chkCur();if(!c0||!c0.cmd){IDIAG=null;return}
+  const c=CMDS.find(x=>x.k===c0.k&&!x.alt);if(!c)return;const seq=c.seq.map(x=>x.slice(1)),L=ILOG,n=L.length,last=L[n-1];
+  let i=-1;for(let j=n-1;j>=Math.max(0,n-seq.length);j--)if(L[j].res===seq[0]){i=j;break}
+  const why=(e,x)=>{if(e.res[0]==='×')return e.res.slice(1)+'（止めた '+e.hold+'ms・動いた '+e.dist+'・角度 '+e.ang+'°・'+e.dur+'ms）';
+    if(x[0]==='h'&&e.res[0]==='f')return 'ホールドにならずフリック'+DIRK[e.res[1]]+'になった（止めた時間 '+e.hold+'ms、'+e.need+'ms 要る）';
+    if(x[0]==='h'&&e.res==='t')return 'スワイプしていない（タップ）';
+    if(x[0]==='f'&&e.res[0]==='h')return 'フリックのつもりがホールド'+DIRK[e.res[1]]+'になった（止めた '+e.hold+'ms）';
+    if(x[1]!==e.res[1])return '向きが '+RESN(e.res)+'（角度 '+e.ang+'°）';return RESN(e.res)};
+  if(i<0){const f=(n>=2&&last.res===seq[1])?L[n-2]:last;IDIAG={ok:false,s:MV[c.k].nm+'：1手目 '+tokName('*'+seq[0])+' にならない → '+why(f,seq[0])};ST.cdiag=ST.cdiag||{};const k='1手目：'+why(f,seq[0]).replace(/（.*$/,'');ST.cdiag[k]=(ST.cdiag[k]||0)+1;return}
+  const parts=['1手目 ✓'];
+  for(let m=1;m<seq.length;m++){const e=L[i+m];if(!e){IDIAG={ok:true,s:MV[c.k].nm+'：'+parts.join(' → ')+' → '+(m+1)+'手目を待つ（'+tokName('*'+seq[m])+'）'};return}
+    if(e.res!==seq[m]||e.gap>CFG.cmdGap){const w=e.res!==seq[m]?why(e,seq[m]):'間が長い（'+e.gap+'ms、'+CFG.cmdGap+'ms まで）';IDIAG={ok:false,s:MV[c.k].nm+'：'+parts.join(' → ')+' → '+(m+1)+'手目 × '+w};
+      ST.cdiag=ST.cdiag||{};const k=(m+1)+'手目：'+w.replace(/（.*$/,'');ST.cdiag[k]=(ST.cdiag[k]||0)+1;return}
+    parts.push((m+1)+'手目 ✓（間 '+e.gap+'ms・止めた '+e.hold+'ms）')}
+  IDIAG={ok:true,s:MV[c.k].nm+'：'+parts.join(' → ')}}
 function gRec(label,ok,why){const r=ST.g[label]||(ST.g[label]={ok:0,ng:0});ok?r.ok++:r.ng++;if(!ok&&why)ST.why[why]=(ST.why[why]||0)+1}
 function hist(s,ok){if(MODE==='vs'&&P&&P.cpu)return;HIST.push({s,ok,t:150});if(HIST.length>8)HIST.shift()}
 const TASKS=[
@@ -411,12 +433,12 @@ function stickMove(g,t){
 // 右手：ホールドしてからのスワイプは、動いた時点で出す
 function btnMove(g,p,t){
   if(!g.armed&&!g.spent&&g.maxd<CFG.tapd&&t-g.t0>=armT(g)){armG(g,t);const q=g.h[g.h.length-2]||p;g.x0=q.x;g.y0=q.y}   // 止めていた時間が足りていれば、動かした瞬間にホールドとして扱う（フレームの区切りを待たない）
-  g.maxd=Math.max(g.maxd,Math.hypot(p.x-g.x0,p.y-g.y0));
+  g.maxd=Math.max(g.maxd,Math.hypot(p.x-g.x0,p.y-g.y0));if(!g.mvT&&g.maxd>=CFG.tapd)g.mvT=t;
   const dx=p.x-g.x0,dy=p.y-g.y0,dd=Math.hypot(dx,dy);
   g.dir=dd>=CFG.flickD*0.5?dirOf(dx,dy).d:null;
   if(g.armed&&!g.spent&&dd>=CFG.hsD){const r=snapDir(dx,dy,'h',g.t0);g.spent=true;
     if(r.off>CFG.dtol){failAt(g,'向きがずれた',BNM[g.b.k]+'ホールド');return}
-    inQ.push(gesture(g,'h',r.d,BNM[g.b.k]+'ホールド'+DIRK[r.d]))}
+    ilog(g,t,'h'+r.d);inQ.push(gesture(g,'h',r.d,BNM[g.b.k]+'ホールド'+DIRK[r.d]))}
 }
 function dirOf(dx,dy){const a=Math.atan2(-dy,dx)*180/Math.PI;const c=[['F',0],['U',90],['B',180],['B',-180],['D',-90]];
   let best=null,bd=1e9;for(const [d,v] of c){const df=Math.abs(a-v);if(df<bd){bd=df;best=d}}return {d:best,off:bd,a}}
@@ -429,17 +451,17 @@ function release(g,t,cancel){
   if(cancel)return;
   if(g.spent){if(!g.kakuDone)inQ.push({kind:'rel',gid:g.gid,x:g.x,y:g.y});return}   // ため・伏せは離した時に出す
   const bn=BNM[g.b.k];
-  if(g.armed){if(g.maxd<CFG.hsD)gRec(bn+'ホールドだけ',false,'ホールドだけ');return}
+  if(g.armed){if(g.maxd<CFG.hsD){gRec(bn+'ホールドだけ',false,'ホールドだけ');ilog(g,t,'×ホールドだけ')}return}
   const dur=t-g.t0,dd=Math.hypot(g.x-g.x0,g.y-g.y0);
   if(dd>=CFG.flickD){const r=snapDir(g.x-g.x0,g.y-g.y0,'f',g.t0);
     if(dur>CFG.flickT){failAt(g,'フリックが遅い',bn+'フリック'+DIRK[r.d]);return}
     if(r.off>CFG.dtol){failAt(g,'向きがずれた',bn+'フリック'+DIRK[r.d]);return}
     if(r.off>CFG.dtol-10)ST.edge[r.d]=(ST.edge[r.d]||0)+1;
-    inQ.push(gesture(g,'f',r.d,bn+'フリック'+DIRK[r.d],{replaceTap:g.pressed}));return}
-  if(g.maxd<CFG.tapd){if(!g.pressed)inQ.push(gesture(g,'t',null,bn+'タップ'));return}
+    ilog(g,t,'f'+r.d);inQ.push(gesture(g,'f',r.d,bn+'フリック'+DIRK[r.d],{replaceTap:g.pressed}));return}
+  if(g.maxd<CFG.tapd){ilog(g,t,'t');if(!g.pressed)inQ.push(gesture(g,'t',null,bn+'タップ'));return}
   failAt(g,'動きが短い',bn+'その他');
 }
-function failAt(g,why,label){gRec(label,false,why);fingerPop('× '+why,g.x,g.y,false);hist('× '+why,false);SE.fail();taskMis(label);chkTry()}
+function failAt(g,why,label){ilog(g,null,'×'+why);gRec(label,false,why);fingerPop('× '+why,g.x,g.y,false);hist('× '+why,false);SE.fail();taskMis(label);chkTry()}
 function taskMis(label){const t=curTask();if(t&&t.exp&&!label.includes(t.exp)){const k=t.exp+' → '+label;ST.mis[k]=(ST.mis[k]||0)+1}}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 addEventListener('contextmenu',e=>e.preventDefault());document.addEventListener('gesturestart',e=>e.preventDefault());
@@ -1529,6 +1551,9 @@ function render(){
     if(IMG.face_cich){const h=Math.min(LH*0.6,LW/3),w=h*3;ctx.globalAlpha=k;ctx.drawImage(IMG.face_cich,LW/2-w/2,LH*0.5-h/2,w,h)}else{ctx.fillStyle='rgba(224,48,74,'+(0.9*k)+')';ctx.fillRect(0,LH*0.38,LW,LH*0.24);ctx.globalAlpha=k;if(IMG.face_y)ctx.drawImage(IMG.face_y,LW/2-230,LH*0.38+6,74,74)}
     const iy=IMG.face_cich?LH*0.32:0;otxt('一撃必殺',LW/2+20,LH*0.47+iy,'italic 900 42px '+UI,'#fff');otxt(ICHNM[P.ch]||'白猫終閃',LW/2+20,LH*0.56+iy,'800 14px '+UI,'#fff');ctx.globalAlpha=1}
   if(big&&!cutin&&!ichi&&big.s){const a=Math.min(1,big.t/10),sc=1+Math.max(0,(big.t-40)/20);ctx.globalAlpha=a;ctx.save();ctx.translate(LW/2,FB*0.3);ctx.scale(sc,sc);otxt(big.s,0,0,'italic 900 30px '+UI,big.c,'center','middle',6);ctx.restore();ctx.globalAlpha=1}
+  if(CFG.ilog&&MODE!=='vs'&&ILOG.length){const L=ILOG.slice(-4),x0=245,y0=LH*0.27,DL=IDIAG?(IDIAG.s.match(/.{1,38}/g)||[]).slice(0,3):[];ctx.fillStyle='rgba(8,10,16,.72)';ctx.fillRect(x0,y0,420,16*L.length+16*DL.length+6);
+    L.forEach((e,i)=>txt(e.b+' '+RESN(e.res)+'　止 '+e.hold+'/'+e.need+'ms・長 '+e.dist+'・'+e.ang+'°・'+e.dur+'ms'+(e.gap!=null&&e.gap<2000?'・間 '+e.gap:''),x0+6,y0+13+i*16,'700 11px '+UI,e.res[0]==='×'?C.crim:'#dfe6ee','left','alphabetic'));
+    DL.forEach((l,i)=>txt(l,x0+6,y0+16*L.length+15+i*16,'800 11px '+UI,IDIAG.ok?C.lime:C.gold,'left','alphabetic'))}   // v1.7：入力の記録（B-003）
   // ---- 上のボタン ----
   FBTN.length=0;
   const btn=(label,x,w,fn,on,yy)=>{const b={x,y:yy||48,w,h:30,fn};FBTN.push(b);rr(b.x,b.y,b.w,b.h,6);ctx.fillStyle=on?C.lime:'rgba(20,24,33,.8)';ctx.fill();ctx.strokeStyle=on?C.lime:C.line;ctx.stroke();txt(label,b.x+w/2,b.y+16,'700 13px '+UI,on?C.bg:C.fg,'center','middle')};
@@ -1700,6 +1725,7 @@ const UIDEF=[
   {h:'練習'},
   {k:'dummy',l:'相手',o:[['stand','立っている★'],['crouch','しゃがむ'],['hop','その場で跳ぶ'],['guard','ガードする'],['attack','殴ってくる'],['jump','飛び込んでくる']]},
   {k:'lowfx',l:'画面の点滅を弱く',o:[[false,'しない★'],[true,'弱く']],n:'一撃必殺のフラッシュ・反転を、明るさを抑えた短い光に置きかえる（寄りはする）。'},
+  {k:'ilog',l:'入力の記録を画面に出す（練習）',o:[[true,'出す★'],[false,'出さない']],n:'右手のしぐさごとに、止めた時間・動いた長さ・向き・間を出す。コマンドのお題では、どの手で外れたかを出す（B-003 の実機の確認用）。'},
   {k:'nekoAlt',l:'白猫の構えを はじく↓→はじく← でも出す',o:[[false,'出さない★'],[true,'出す']],n:'control-brief v8.3：ホールド←で出せないときの予備。'},
   {k:'nodmg',l:'相手の体力',o:[[true,'減らない（コンボ後に戻る）★'],[false,'減る']]},
   {k:'eburst',l:'相手のバースト（8発目で抜ける）',o:[[false,'なし★'],[true,'あり']]},
@@ -1754,6 +1780,7 @@ function buildOv(){
   const why=Object.entries(ST.why),mis=Object.entries(ST.mis),edge=Object.entries(ST.edge);
   h+=`<div class="note">出なかった理由：${why.length?why.map(([w,n])=>w+' '+n).join('、'):'まだなし'}</div>`;
   h+=`<div class="note">暴発（お題の中で、ねらいと違うしぐさ）：${mis.length?mis.map(([w,n])=>w+' '+n).join('、'):'まだなし'}</div>`;
+  {const cd=Object.entries(ST.cdiag||{});h+=`<div class="note">コマンドのお題で外れた手（v1.7）：${cd.length?cd.map(([w,n])=>w+' '+n).join('、'):'まだなし'}</div>`}
   h+=`<div class="note">向きのきわどいはじき（境から10°以内）：${edge.length?edge.map(([w,n])=>DIRK[w]+' '+n).join('、'):'まだなし'}</div>`;
   h+=`<div class="note">最大コンボ ${ST.max}（${ST.maxDmg}ダメージ）・JUST ${ST.just}・COUNTER ${ST.counter}・返し ${ST.parry}・追いかけ ${ST.chase}・バウンド ${ST.bounce}・壁 ${ST.wall}・締め ${ST.fin}・超必殺 ${ST.sup}・コマンド技 ${ST.cmd||0}・受け身された ${ST.tech}・バースト ${ST.burst}</div>`;
   if(ST.task){h+='<h2>お題の成功率</h2><div class="tbl"><table><tr><th>お題</th><th>成功</th></tr>';for(const t of TASKS){const r=ST.task[t.k];if(r)h+=`<tr><td>${t.l}</td><td>${r.ok}/${r.n}（${Math.round(r.ok*100/r.n)}%）</td></tr>`}h+='</table></div>'}
@@ -1778,8 +1805,8 @@ function buildOv(){
   document.getElementById('ovchk').onclick=()=>{if(CHK){CHK=null;reset()}else chkStart();closeOv()};
   document.getElementById('ovtask').onclick=()=>{task=task?null:(startTask(),task);reset();closeOv()};
   document.getElementById('ovdef').onclick=()=>{for(const d of UIDEF)if(d.min!==undefined)CFG[d.k]=DEF[d.k];saveCfg();buildOv()};
-  document.getElementById('ovclr').onclick=()=>{for(const k of ['g','why','mis','edge'])ST[k]={};for(const k in ST)if(typeof ST[k]==='number')ST[k]=0;delete ST.task;HIST.length=0;buildOv()};
-  document.getElementById('ovcopy').onclick=()=>{const s=JSON.stringify({ver:VER,ua:navigator.userAgent,cfg:CFG,stats:ST,check:CHK?CHK.res:null});
+  document.getElementById('ovclr').onclick=()=>{for(const k of ['g','why','mis','edge','cdiag'])ST[k]={};ILOG.length=0;IDIAG=null;for(const k in ST)if(typeof ST[k]==='number')ST[k]=0;delete ST.task;HIST.length=0;buildOv()};
+  document.getElementById('ovcopy').onclick=()=>{const s=JSON.stringify({ver:VER,ua:navigator.userAgent,cfg:CFG,stats:ST,check:CHK?CHK.res:null,ilog:ILOG,cdiag:ST.cdiag||null,diag:IDIAG,scr:[innerWidth,innerHeight,devicePixelRatio,LW,LH]});
     const ta=document.getElementById('ovtxt');ta.value=s;const sel=()=>{ta.hidden=false;ta.focus();ta.select()};
     try{navigator.clipboard.writeText(s).then(()=>{document.getElementById('ovcopy').textContent='コピーしました'},sel)}catch(e){sel()}};
 }
