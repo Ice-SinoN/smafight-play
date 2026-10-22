@@ -71,7 +71,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v2.4.1';
+const VER='v2.5';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -97,7 +97,7 @@ const STATEPOSE={walkF:['walk_f','idle'],walkB:['walk_b','idle'],crouch:['crouch
 // ================= 設定（moveset v2 1章＋虎雪 16:00「フリックとホールドからのスワイプに分ける」） =================
 const DEF={ui:'game',fx:true,hbox:false,hand:'R',easy:false,nexth:true,punch:true,capOn:true,dsz:'std',
   dz:12,follow:60,sflickD:35,sflickT:150,
-  tween:true,tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,cmdT:120,cmdTol:60,nekoAlt:false,ilog:true,jabEnd:0,throwAdd:4,repStun:50,repDmg:50,jgF:6,jgStun:16,jgLock:20,bstDmg:30,bstRec:12,throwD:50,lowfx:false,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:600,cmdBuf:24,
+  tween:true,tapMode:'release',tapd:15,flickD:30,flickT:180,dtol:45,cmdT:120,cmdTol:60,nekoAlt:false,ilog:true,jabEnd:0,throwAdd:4,bgm:true,bgmVol:60,repStun:50,repDmg:50,jgF:6,jgStun:16,jgLock:20,bstDmg:30,bstRec:12,throwD:50,lowfx:false,hsHold:180,hsD:24,lhHold:1000,kakuSec:10,kakuSP:100,chf:700,cmdGap:600,cmdBuf:24,
   cancelF:12,justF:4,parryF:8,buf:8,scale10:60,scaleMin:30,jcap:25,
   bsize:100,bx:0,by:0,stopx:100,
   dummy:'stand',nodmg:true,eburst:false,spinf:false,start:'mid',vib:true,snd:true};
@@ -534,6 +534,8 @@ const FXL={ring_01:16,speedline_01:8,impact_ring:18,slash_big:34,cat_light:40,sn
 function fxAdd(name,x,y,dir,big){if(!CFG.fx)return;const n=name.startsWith('spark')?4:1;FXS.push({name,x,y,dir:dir||1,t:0,n,per:name.startsWith('spark')?3:1,life:name.startsWith('spark')?12:FXL[name]||14,big:big||1})}
 function dust(x,n,dir,y){if(!CFG.fx)return;for(let i=0;i<n;i++)dusts.push({x:x+(Math.random()-.5)*20,y:(y||0)-2,vx:(dir||((Math.random()-.5)*2))*(0.4+Math.random()*0.8),t:14+Math.random()*8|0,s:2+Math.random()*3})}
 const groundFree=()=>P.y===0&&['idle','walk','crouch','guard'].includes(P.st);
+const DODGE={YUKI:{dash:70,back:45},RIN:{dash:60,back:55}};   // defense v1.3 3章（H＝100）
+const dodgeInv=f=>!f.noInv&&((f.st==='dash'&&f.t>=3&&f.t<=10)||(f.st==='back'&&f.t>=1&&f.t<=10));   // ダッシュ 3〜10F・バックステップ 1〜10F の無敵（打撃と飛び道具。投げはよけられない）
 const airFree=()=>P.st==='jump'||(P.st==='adash'&&P.t>4);
 function canBurst(){return !P.burstUsed&&P.sp>=50}
 function stanceNow(){if(P.y<0||P.st==='chase'||P.st==='jump'||P.st==='adash'||P.st==='jsq')return P.st==='jsq'?'stand':'air';if(P.st==='crouch'||(P.y===0&&sDown(stickVec().s)))return 'crouch';return 'stand'}
@@ -598,6 +600,7 @@ function cmdPrefix(){ // いまの手が、どれかのコマンドの2手目以
       if(ok)return c}}
   return null}
 function canStart(m,cmd,path,replace){ // いま出せるか（キャンセルも含む）。戻り値：false／{cancel,just}
+  if(!m.air&&P.st==='dash'&&P.t>=11&&!m.thr)return {cancel:true};   // ダッシュの 11F 目から技へキャンセル
   if(m.air?airFree():groundFree())return {cancel:false};
   if(m.air&&P.st==='chase')return false;
   if(P.st==='atk'){const c=P.mv;
@@ -678,7 +681,8 @@ function doSFlick(a){
   const lb=a.dir>0?'左はじき→':'左はじき←';
   if(P.st==='jump'&&!P.airDash){P.airDash=true;P.st='adash';P.t=0;P.dir=a.dir;P.vy=0;P.vx=a.dir*W.adash/W.adashF;SE.dash();dust(P.x,3,-a.dir,P.y);hist('空中ダッシュ',true);gRec(lb,true);return}
   if(groundFree()){
-    if(a.dir>0){P.st='dash';P.dur=W.dashF;P.vx=W.dash/W.dashF}else{P.st='back';P.dur=W.backF;P.vx=-W.back/W.backF}
+    const dd=DODGE[P.ch]||{dash:W.dash,back:W.back};P.noInv=frameNo-(P.dodgeEnd||-99)<=20;   // 20F 以内の2回目は無敵なし
+    if(a.dir>0){P.st='dash';P.dur=W.dashF;P.vx=dd.dash/W.dashF}else{P.st='back';P.dur=W.backF;P.vx=-dd.back/W.backF}
     P.t=0;SE.dash();dust(P.x,4,-a.dir);hist(a.dir>0?'ダッシュ':'バックステップ',true);gRec(lb,true);return}
   if(P.st==='jsq'){P.queuedS=a;return}
   gRec(lb,false,'動けない間');
@@ -715,7 +719,7 @@ function ichiUpdate(m){ // 振りかぶり ▶ 一振り（当たりは4Fだけ�
   if(P.t>m.su&&P.t<=m.su+m.ac){P.x=Math.min(XR,P.x+20);if(E.x-P.x<BODY)P.x=E.x-BODY;
     if(!P.hitDone){const dx=E.x-P.x;
       const vs=MODE==='vs',es=vs?stickOf(E).s:-1,eCr=vs?(E.st==='crouch'||(E.st==='block'&&es>=5&&es<=7)):E.crouch;
-      const okSt=vs?(E.y===0&&!E.vict&&!['jump','jsq','adash','chase','ich','burst'].includes(E.st)&&!(E.st==='back'&&E.t<=W.backInv)):(E.st==='idle'||E.st==='atk');
+      const okSt=vs?(E.y===0&&!E.vict&&!['jump','jsq','adash','chase','ich','burst'].includes(E.st)&&!dodgeInv(E)):(E.st==='idle'||E.st==='atk');
       if(dx>=-6&&dx<=m.rx&&E.y>-15&&!eCr&&!E.ko&&!(E.inv>0)&&okSt){P.hitDone=true;   // 立っている相手の胸〜頭だけ。コンボ中・しゃがみ・空中には当たらない
         const eGuard=vs?(['idle','walk','guard','block','land'].includes(E.st)&&sBack(es)&&es!==3):(dummyMode()==='guard'&&E.st==='idle');
         if(eGuard){if(vs){E.st='block';E.stun=20}E.gT=18;SE.block();pop('ガード',E,C.mint);ichiMiss('ガードされた')}else startICH()}}}
@@ -866,7 +870,7 @@ function eHitsP(dmg){
     nekoStrike(m0,m0.dmg||130,true);
     if(P.tParry){P.tParry=false;taskTry('parry',true)}
     return}
-  if(P.inv||(P.st==='atk'&&m0.inv&&P.t<=m0.inv)||(P.st==='burst'&&P.t<20)||P.st==='duck'||(P.st==='back'&&P.t<=W.backInv)){pop('すり抜け',P,'#5ff2e0');return}
+  if(P.inv||(P.st==='atk'&&m0.inv&&P.t<=m0.inv)||(P.st==='burst'&&P.t<20)||P.st==='duck'||(dodgeInv(P)&&!m0.thr)){pop('すり抜け',P,'#5ff2e0');return}
   const v=stickVec(),guard=(groundFree()||P.st==='crouch')&&sBack(v.s)&&v.s!==3;
   if(guard){P.st='block';P.stun=12;SE.block();pop('ガード',P,C.mint);freeze=4;P.sp=Math.min(100,P.sp+2);return}
   P.st='stun';P.stun=24;P.hp=Math.max(0,P.hp-dmg);if(P.hp<=0)P.hp=1000;P.queued=null;P.relKey=null;P.sp=Math.min(100,P.sp+6);P.vy=P.y<0?-2:0;
@@ -928,7 +932,8 @@ function updateP(){
       hist(P.jdir>0?'前ジャンプ':P.jdir<0?'後ろジャンプ':'ジャンプ',true);if(P.queuedS){const q=P.queuedS;P.queuedS=null;doSFlick(q)}}
     break}
   case 'dash':case 'back':
-    P.t++;const k=1-Math.pow(P.t/P.dur,2)*0.6;P.x+=P.vx*k*1.25;if(P.t>=P.dur){if(P.st==='dash')P.dashEnd=frameNo;P.st='idle'}break;
+    P.t++;const k=1-Math.pow(P.t/P.dur,2)*0.6;P.x+=P.vx*k*1.25;if(P.t>=P.dur){if(P.st==='dash')P.dashEnd=frameNo;P.recF=P.st==='dash'?6:8;P.st='rec';P.t=0}break;   // 止まり 6F／着地 8F（技・ガード不可）
+  case 'rec':if(++P.t>=P.recF){P.st='idle';P.dodgeEnd=frameNo}break;
   case 'adash':P.t++;P.x+=P.vx;if(P.t>=W.adashF){P.st='jump';P.vx=P.dir*0.9}break;
   case 'jump':P.jt=(P.jt||0)+1;if(airPhys())land(W.jland);break;
   case 'chase':{ // 打ち上げた相手のところへ自動で跳ぶ
@@ -1084,7 +1089,7 @@ function pjStep(){
       sparks.push({wx:(a.x+b.x)/2,wy:(a.y+b.y)/2,t:10,r:Math.random(),c:C.gold,big:1});SE.block();pop('相殺',{x:(a.x+b.x)/2-24,y:Math.min(a.y,b.y)+60},C.gold,12);
       if(a.dead&&a.ichi)pjIchiMiss(a);if(b.dead&&b.ichi)pjIchiMiss(b)}}
   // 相手に当たる
-  for(const p of PROJ){if(p.dead||p.wait||p.k==='rook'||(p.k==='piece'&&p.cdUntil&&p.age<p.cdUntil))continue;const f=F[1-p.side];if(!f||f.ko||f.st==='tech'||(f.st==='down'&&!p.m.otg)||f.st==='ich')continue;if(MATCH&&MATCH.phase!=='fight')continue;
+  for(const p of PROJ){if(p.dead||p.wait||p.k==='rook'||(p.k==='piece'&&p.cdUntil&&p.age<p.cdUntil))continue;const f=F[1-p.side];if(!f||f.ko||f.st==='tech'||(f.st==='down'&&!p.m.otg)||f.st==='ich'||dodgeInv(f)||(f.st==='burst'&&f.t<20))continue;if(MATCH&&MATCH.phase!=='fight')continue;
     const bx=pjBox(f),w=p.k==='piece'?22:p.k==='pillar'?26:18*1.3;
     if(Math.abs(p.x-f.x)<w&&p.y+p.h>=bx.top&&p.y-p.h<=bx.bot){if(p.k==='piece'){p.hitOnce=true;p.cdUntil=p.age+60}else p.dead=true;   // 駒はすり抜けて残る（同じ相手に1秒に1回）
 
@@ -1138,7 +1143,7 @@ function vsDefend(m,opt,wasCombo){
     asSide(E.side,()=>{SE.parry();vib([20,30,20]);pop('矢を取った',P,C.lime,16);bigText('CATCH',C.lime);P.sp=Math.min(100,P.sp+10);freeze=Math.max(freeze,10);flash=6;flashC='rgba(198,255,61,';rings.push({x:P.x+20,y:P.y-60,t:20,c:C.lime});ST.catch=(ST.catch||0)+1});return true}
   if(E.st==='atk'&&E.mv&&E.mv.parry&&!m.thr&&!opt.proj&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)){   // 受け流し・当て身返し（受けた側の技）
     P.hitDone=true;asSide(E.side,()=>{eHitsP(0);if(E.st==='stun')E.vict=true});return true}
-  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||(E.st==='burst'&&E.t<20)||E.st==='duck'||(E.st==='back'&&E.t<=W.backInv)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
+  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||(E.st==='burst'&&E.t<20)||E.st==='duck'||(dodgeInv(E)&&!m.thr)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
   if(m.thr){const tech=E.cpu?Math.random()<CPUL[VSCFG.lv].tech:(E.lastHt!==undefined&&frameNo-E.lastHt<=8);   // 投げ抜け：投げられてから 6F 以内に【強】タップ（rules 2-2）
     if(tech){P.hitDone=true;E.x+=26;P.x-=8;E.st='block';E.stun=14;SE.block();pop('投げ抜け',E,C.mint);bigText('投げ抜け',C.mint);return true}}
   if(!wasCombo&&!opt.proj&&!m.thr&&!m.ichi&&E.y===0&&E.bkT!==undefined&&frameNo-E.bkT<=CFG.jgF&&['idle','walk','crouch','guard','block','land'].includes(E.st)){   // ジャストガード（3-6）：近接技だけ
@@ -1156,7 +1161,8 @@ function vsDefend(m,opt,wasCombo){
 function pracStart(ch){VSCFG.me=ch;vsStart(true)}   // v1.9：技の練習（YUKI・RIN）。VS のしくみで、相手は動かない人形
 const PRAC=()=>MODE==='vs'&&MATCH&&MATCH.prac;
 function resetAny(){if(PRAC()){vsRound(false);MATCH.phase='fight';P.x=E.x-70}else reset()}
-function vsStart(prac){MODE='vs';CHK=null;CMB=null;task=null;ICH=null;PROJ=[];F=[newFighter(0,VSCFG.me),newFighter(1,prac===true?(VSCFG.me==='RIN'?'YUKI':'RIN'):VSCFG.op)];setChar(F[0].ch);F[0].sp=F[1].sp=50;
+let matchSeed=0;   // v2.5：試合の乱数の種。2P では部屋を作った側が決めて送る
+function vsStart(prac,seed){matchSeed=(seed!=null?seed:(Math.random()*4294967296))>>>0;MODE='vs';CHK=null;CMB=null;if(prac===true)bgmStop();else bgmPlay();task=null;ICH=null;PROJ=[];F=[newFighter(0,VSCFG.me),newFighter(1,prac===true?(VSCFG.me==='RIN'?'YUKI':'RIN'):VSCFG.op)];setChar(F[0].ch);F[0].sp=F[1].sp=50;
   MATCH={wins:[0,0],round:1,time:VS_T,phase:'intro',pt:0,res:[],last:null,prac:prac===true};vsRound(true);if(prac===true){MATCH.phase='fight';F[1].dummy=true;F[0].sp=F[1].sp=100}try{save('smf_vslv',VSCFG.lv)}catch(e){}}
 function dummyStick(){const d=CFG.dummy;return d==='crouch'?{x:0,y:30,s:6}:d==='guard'?{x:-30,y:0,s:4}:{x:0,y:0,s:-1}}   // 練習の人形（⚙「相手」）
 function vsRound(first){const M=MATCH;
@@ -1213,6 +1219,9 @@ function vsStep(){
   const overlapY=Math.abs(P.y-E.y)<80,minD=overlapY?BODY*((CHSC[P.ch]||1)+(CHSC[E.ch]||1))/2:10;
   if(E.x-P.x<minD){const c=(minD-(E.x-P.x))/2;P.x-=c;E.x+=c;if(P.x<XL){E.x+=XL-P.x;P.x=XL}if(E.x>XR){P.x-=E.x-XR;E.x=XR}}
   const maxD=VIEWW0-25;if(E.x-P.x>maxD){const c=(E.x-P.x-maxD)/2;P.x+=c;E.x-=c}
+  for(const r of PROJ){if(r.k!=='rook'||!r.landed||r.dead)continue;for(const f of F){const w=20+BODY*(CHSC[f.ch]||1)/2;let sd=r['w'+f.side];
+    if(!sd){sd=f.side===r.side?(Math.sign(f.x-r.x)||(F[1-f.side].x>r.x?-1:1)):(Math.sign(f.x-r.x)||1);r['w'+f.side]=sd}
+    if(sd>0&&f.x<r.x+w)f.x=Math.min(XR,r.x+w);if(sd<0&&f.x>r.x-w)f.x=Math.max(XL,r.x-w)}}   // ルークはキャラが通れない壁（虎雪 17:03）
   if(shake>0)shake--;if(flash>0)flash--;
   for(const p of pops)p.t--;pops=pops.filter(p=>p.t>0);for(const p of fpops)p.t--;fpops=fpops.filter(p=>p.t>0);
   for(const f of FXS)f.t++;FXS=FXS.filter(f=>f.t<f.life);
@@ -1414,7 +1423,7 @@ function vsHUD(hw){const M=MATCH;if(!M)return;
 // ================= ループ =================
 const ms={hz:0,drops:0,lat:0,_f:0,_t:performance.now(),_ls:[]};
 const DT=1000/60;let acc=0,last=performance.now();
-const ERRS=[];function errLog(e){if(ERRS.length<8)ERRS.push((VER+' F'+frameNo+' '+(e&&e.message)+' '+((e&&e.stack)||'').split('\n').slice(1,3).join(' | ')).slice(0,300));if(ERRS.length===1)toast={s:'エラーが起きました（止まらずに続けます）\n⚙ →「記録をコピー」で送ってください',t:240}}   // B-014：止まらないように
+const ERRS=[];function errLog(e){if(ERRS.length<8)ERRS.push((VER+' F'+frameNo+' '+(e&&e.message)+' '+((e&&e.stack)||'').split('\n').slice(1,3).join(' | ')).slice(0,300));if(ERRS.length===1)toast={s:'エラーが起きました（止まらずに続けます）\n⚙ →「記録をコピー」で送ってください',t:240}}   // B-013：止まらないように
 function frame(now){
   if(!mn.hidden||(MODE==='vs'&&!ov.hidden)){last=now;acc=0;render();requestAnimationFrame(frame);return}   // メニュー・設定を開いている間は止める
   const d=now-last;last=now;ms._f++;if(d>DT*1.5&&d<500)ms.drops++;
@@ -1825,6 +1834,7 @@ const UIDEF=[
   {k:'kakuSP',l:'覚醒：使うSP',min:0,max:100,st:5,u:''},
   {k:'dtol',l:'向きのゆるさ',min:20,max:45,u:'°',n:'45°＝ずれても必ずどれかの向きになる。'},
   {k:'throwAdd',l:'投げの届く距離（体の幅の外）',min:0,max:20,st:1,u:'',n:'body-scale 2章：届く距離＝2人の体の幅の半分の和＋この値（★0.04H＝4）。'},
+  {k:'bgmVol',l:'BGM の大きさ',min:0,max:100,st:5,u:'%',n:'対戦の BGM（battle_garage c3・c4 を試合ごとにランダム。A-019）。'},
   {k:'jgF',l:'ジャストガードの受付',min:2,max:12,st:1,u:'F',n:'control-brief 3-6 ★6F。近接技が当たる直前のこのフレーム数の間に、左手を後ろへ入れ始めると成立。'},
   {k:'jgStun',l:'ジャストガード：相手のスキ',min:8,max:30,st:1,u:'F',n:'★16F。'},
   {k:'jgLock',l:'ジャストガード：入れ直しの止め',min:0,max:40,st:1,u:'F',n:'★20F。後ろを入れたあと、この間は次の受付を見ない（ガチャ入れ防止）。'},
@@ -1864,6 +1874,7 @@ const UIDEF=[
   {k:'spinf',l:'SP',o:[[false,'溜める★'],[true,'ずっと満タン']]},
   {k:'vib',l:'振動（Androidのみ）',o:[[true,'あり'],[false,'なし']]},
   {k:'snd',l:'音',o:[[true,'あり'],[false,'なし']]},
+  {k:'bgm',l:'BGM（対戦）',o:[[true,'あり★'],[false,'なし']]},
 ];
 const HOW=`<div class="how">
 <b>横持ち・両手</b>。<b>左手（移動）</b>：左半分のどこでも触った所が中心。倒す＝歩く／上＝ジャンプ（斜めで前・後ろ）／下＝しゃがむ／後ろ＝ガード。前・後ろへすばやくはじく＝ダッシュ・バックステップ。<br>
@@ -1873,7 +1884,11 @@ const HOW=`<div class="how">
 <div class="tbl" id="howtbl"></div>`;
 const mn=document.getElementById('mn'),mnin=document.getElementById('mnin');
 try{const v=load('smf_vslv');if(v>=1&&v<=5)VSCFG.lv=v}catch(e){}
-function openMenu(res){buildMenu(res);mn.hidden=false}
+const BGMS=['img/7f481d37f3ded0a2.mp3','img/1364deee165f7c1e.mp3'],BGMLOOP=[0,0];let bgmEl=null;   // A-019：battle_garage は c3・c4 を試合ごとにランダム。ループ位置（秒）はサウンド班の値が来たら BGMLOOP に
+function bgmPlay(){bgmStop();if(!CFG.bgm||!CFG.snd)return;const i=matchSeed&1;try{bgmEl=new Audio(BGMS[i]);bgmEl.volume=CFG.bgmVol/100;bgmEl.addEventListener('ended',()=>{if(bgmEl){bgmEl.currentTime=BGMLOOP[i]||0;bgmEl.play().catch(()=>{})}});bgmEl.play().catch(()=>{})}catch(e){}}
+function bgmStop(){if(bgmEl){try{bgmEl.pause()}catch(e){}bgmEl=null}}
+document.addEventListener('visibilitychange',()=>{if(bgmEl){if(document.visibilityState==='hidden')bgmEl.pause();else bgmEl.play().catch(()=>{})}});
+function openMenu(res){buildMenu(res);mn.hidden=false;bgmStop()}
 function closeMenu(){mn.hidden=true;resize()}
 function buildMenu(res){let h='';
   if(res)h+='<div class="res" style="color:'+(res.win?'var(--lime)':res.t==='DRAW'?'var(--fg)':'var(--crim)')+'">'+res.t+'</div><div class="note" style="text-align:center">'+res.d+'</div>';
