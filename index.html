@@ -71,7 +71,7 @@ canvas{display:block;touch-action:none}
 <script>
 (()=>{
 'use strict';
-const VER='v2.5';
+const VER='v2.5.1';
 const wrap=document.getElementById('wrap'),cv=document.getElementById('c'),ctxM=cv.getContext('2d'),rot=document.getElementById('rot'),ov=document.getElementById('ov'),ovin=document.getElementById('ovin');
 let ctx=ctxM;
 
@@ -535,7 +535,8 @@ function fxAdd(name,x,y,dir,big){if(!CFG.fx)return;const n=name.startsWith('spar
 function dust(x,n,dir,y){if(!CFG.fx)return;for(let i=0;i<n;i++)dusts.push({x:x+(Math.random()-.5)*20,y:(y||0)-2,vx:(dir||((Math.random()-.5)*2))*(0.4+Math.random()*0.8),t:14+Math.random()*8|0,s:2+Math.random()*3})}
 const groundFree=()=>P.y===0&&['idle','walk','crouch','guard'].includes(P.st);
 const DODGE={YUKI:{dash:70,back:45},RIN:{dash:60,back:55}};   // defense v1.3 3章（H＝100）
-const dodgeInv=f=>!f.noInv&&((f.st==='dash'&&f.t>=3&&f.t<=10)||(f.st==='back'&&f.t>=1&&f.t<=10));   // ダッシュ 3〜10F・バックステップ 1〜10F の無敵（打撃と飛び道具。投げはよけられない）
+const dodgeInv=f=>!f.noInv&&((f.st==='dash'&&f.t>=3&&f.t<=10)||(f.st==='back'&&f.t>=1&&f.t<=10));   // ダッシュ 3〜10F・バックステップ 1〜10F は矢をよける（D-026）
+const dodgeStrike=f=>!f.noInv&&f.st==='back'&&f.t>=1&&f.t<=10;   // 打撃をよけるのはバックステップだけ。投げはどちらも食らう
 const airFree=()=>P.st==='jump'||(P.st==='adash'&&P.t>4);
 function canBurst(){return !P.burstUsed&&P.sp>=50}
 function stanceNow(){if(P.y<0||P.st==='chase'||P.st==='jump'||P.st==='adash'||P.st==='jsq')return P.st==='jsq'?'stand':'air';if(P.st==='crouch'||(P.y===0&&sDown(stickVec().s)))return 'crouch';return 'stand'}
@@ -719,7 +720,7 @@ function ichiUpdate(m){ // 振りかぶり ▶ 一振り（当たりは4Fだけ�
   if(P.t>m.su&&P.t<=m.su+m.ac){P.x=Math.min(XR,P.x+20);if(E.x-P.x<BODY)P.x=E.x-BODY;
     if(!P.hitDone){const dx=E.x-P.x;
       const vs=MODE==='vs',es=vs?stickOf(E).s:-1,eCr=vs?(E.st==='crouch'||(E.st==='block'&&es>=5&&es<=7)):E.crouch;
-      const okSt=vs?(E.y===0&&!E.vict&&!['jump','jsq','adash','chase','ich','burst'].includes(E.st)&&!dodgeInv(E)):(E.st==='idle'||E.st==='atk');
+      const okSt=vs?(E.y===0&&!E.vict&&!['jump','jsq','adash','chase','ich','burst'].includes(E.st)):(E.st==='idle'||E.st==='atk');
       if(dx>=-6&&dx<=m.rx&&E.y>-15&&!eCr&&!E.ko&&!(E.inv>0)&&okSt){P.hitDone=true;   // 立っている相手の胸〜頭だけ。コンボ中・しゃがみ・空中には当たらない
         const eGuard=vs?(['idle','walk','guard','block','land'].includes(E.st)&&sBack(es)&&es!==3):(dummyMode()==='guard'&&E.st==='idle');
         if(eGuard){if(vs){E.st='block';E.stun=20}E.gT=18;SE.block();pop('ガード',E,C.mint);ichiMiss('ガードされた')}else startICH()}}}
@@ -870,7 +871,7 @@ function eHitsP(dmg){
     nekoStrike(m0,m0.dmg||130,true);
     if(P.tParry){P.tParry=false;taskTry('parry',true)}
     return}
-  if(P.inv||(P.st==='atk'&&m0.inv&&P.t<=m0.inv)||(P.st==='burst'&&P.t<20)||P.st==='duck'||(dodgeInv(P)&&!m0.thr)){pop('すり抜け',P,'#5ff2e0');return}
+  if(P.inv||(P.st==='atk'&&m0.inv&&P.t<=m0.inv)||(P.st==='burst'&&P.t<20)||P.st==='duck'||(dodgeStrike(P)&&!m0.thr)){pop('すり抜け',P,'#5ff2e0');return}
   const v=stickVec(),guard=(groundFree()||P.st==='crouch')&&sBack(v.s)&&v.s!==3;
   if(guard){P.st='block';P.stun=12;SE.block();pop('ガード',P,C.mint);freeze=4;P.sp=Math.min(100,P.sp+2);return}
   P.st='stun';P.stun=24;P.hp=Math.max(0,P.hp-dmg);if(P.hp<=0)P.hp=1000;P.queued=null;P.relKey=null;P.sp=Math.min(100,P.sp+6);P.vy=P.y<0?-2:0;
@@ -1143,7 +1144,7 @@ function vsDefend(m,opt,wasCombo){
     asSide(E.side,()=>{SE.parry();vib([20,30,20]);pop('矢を取った',P,C.lime,16);bigText('CATCH',C.lime);P.sp=Math.min(100,P.sp+10);freeze=Math.max(freeze,10);flash=6;flashC='rgba(198,255,61,';rings.push({x:P.x+20,y:P.y-60,t:20,c:C.lime});ST.catch=(ST.catch||0)+1});return true}
   if(E.st==='atk'&&E.mv&&E.mv.parry&&!m.thr&&!opt.proj&&E.t>E.mv.su&&E.t<=E.mv.su+(E.mv.pwin||CFG.parryF)){   // 受け流し・当て身返し（受けた側の技）
     P.hitDone=true;asSide(E.side,()=>{eHitsP(0);if(E.st==='stun')E.vict=true});return true}
-  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||(E.st==='burst'&&E.t<20)||E.st==='duck'||(dodgeInv(E)&&!m.thr)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
+  if(E.inv||(E.st==='atk'&&E.mv&&E.mv.inv&&E.t<=E.mv.inv)||(E.st==='burst'&&E.t<20)||E.st==='duck'||(dodgeStrike(E)&&!m.thr)){P.hitDone=true;pop('すり抜け',E,'#5ff2e0');return true}
   if(m.thr){const tech=E.cpu?Math.random()<CPUL[VSCFG.lv].tech:(E.lastHt!==undefined&&frameNo-E.lastHt<=8);   // 投げ抜け：投げられてから 6F 以内に【強】タップ（rules 2-2）
     if(tech){P.hitDone=true;E.x+=26;P.x-=8;E.st='block';E.stun=14;SE.block();pop('投げ抜け',E,C.mint);bigText('投げ抜け',C.mint);return true}}
   if(!wasCombo&&!opt.proj&&!m.thr&&!m.ichi&&E.y===0&&E.bkT!==undefined&&frameNo-E.bkT<=CFG.jgF&&['idle','walk','crouch','guard','block','land'].includes(E.st)){   // ジャストガード（3-6）：近接技だけ
